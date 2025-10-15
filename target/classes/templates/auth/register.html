@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<!-- Registration page template for new user signup -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Meta tags for responsive design and character encoding -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Vehicle Service System</title>
+    <!-- External CSS libraries for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS for dashboard styling -->
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-200) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+            padding: 2rem 0;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .register-card {
+            background: white;
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--card-shadow-lg);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .register-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+        }
+
+        .register-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 2rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .register-header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 10px solid var(--primary-dark);
+        }
+
+        .register-brand {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .register-brand i {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .register-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5rem 0 0 0;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .register-body {
+            padding: 2rem 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.375rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group-text {
+            background: var(--gray-50);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-weight: 500;
+            border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        .form-control {
+            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            transition: all var(--transition-normal);
+            background-color: #fff;
+            font-size: 0.9rem;
+            border-left: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        .input-group:focus-within .form-control {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-group:focus-within .input-group-text {
+            border-color: var(--primary-color);
+        }
+
+        .form-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .password-strength {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .strength-weak { color: var(--danger-color); }
+        .strength-medium { color: var(--warning-color); }
+        .strength-strong { color: var(--success-color); }
+
+        .btn {
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all var(--transition-normal);
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.4);
+            background: linear-gradient(135deg, var(--primary-dark), #1e40af);
+        }
+
+        .btn-primary:focus {
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .alert {
+            border: none;
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #991b1b;
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            color: #065f46;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .register-footer {
+            text-align: center;
+            padding: 1.5rem 2rem 2rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--gray-50);
+        }
+
+        .register-footer p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .register-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color var(--transition-normal);
+            font-size: 1rem;
+        }
+
+        .register-footer a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-primary:disabled .loading-spinner {
+            display: inline-block;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border: none;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(107, 114, 128, 0.4);
+            background: linear-gradient(135deg, #4b5563, #374151);
+        }
+
+        .form-control.is-valid {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-control.is-invalid {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+        }
+
+        .input-group:has(.form-control.is-valid) .input-group-text {
+            border-color: #10b981;
+            background-color: #f0fdf4;
+            color: #10b981;
+        }
+
+        .input-group:has(.form-control.is-invalid) .input-group-text {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+            color: #ef4444;
+        }
+
+        .form-text.text-success {
+            color: #10b981 !important;
+            font-weight: 500;
+        }
+
+        .form-text.text-danger {
+            color: #ef4444 !important;
+            font-weight: 500;
+        }
+
+        .form-text.text-info {
+            color: #3b82f6 !important;
+            font-weight: 500;
+        }
+
+        .validation-feedback {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .validation-feedback i {
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 1.5rem 0.5rem;
+            }
+            
+            .register-header {
+                padding: 1.5rem 1.5rem;
+            }
+            
+            .register-body {
+                padding: 1.5rem 1.5rem;
+            }
+            
+            .register-footer {
+                padding: 1.25rem 1.5rem 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .register-container {
+                padding: 1rem 0.25rem;
+            }
+            
+            .register-header {
+                padding: 1.25rem 1rem;
+            }
+            
+            .register-body {
+                padding: 1.25rem 1rem;
+            }
+            
+            .register-footer {
+                padding: 1rem 1rem 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                <h1 class="register-brand">
+                    <i class="fas fa-car"></i>
+                    Vehicle Service System
+                </h1>
+                <p class="register-subtitle">Create your customer account</p>
+            </div>
+            
+            <div class="register-body">
+                <!-- Alert Messages -->
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span th:text="${error}"></span>
+                </div>
+                <div th:if="${message}" class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${message}"></span>
+                </div>
+
+                <form th:action="@{/register}" th:object="${user}" method="post" id="registerForm">
+                    <!-- Personal Information Section -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-user me-2"></i>Personal Information
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="firstName" class="form-label">First Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="firstName" th:field="*{firstName}" placeholder="Enter your first name" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="lastName" class="form-label">Last Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="lastName" th:field="*{lastName}" placeholder="Enter your last name" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information Section -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-key me-2"></i>Account Information
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="username" class="form-label">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-at"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="username" th:field="*{username}" placeholder="Choose a username" required>
+                                    </div>
+                                    <div class="form-text">Choose a unique username for login</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        <input type="email" class="form-control" id="email" th:field="*{email}" placeholder="Enter your email" required>
+                                    </div>
+                                    <div class="form-text">We'll use this for important notifications</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="password" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="password" th:field="*{password}" placeholder="Create a password" required>
+                                    </div>
+                                    <div class="password-strength" id="passwordStrength"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                                    </div>
+                                    <div class="form-text" id="passwordMatch"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Section -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-phone me-2"></i>Contact Information
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="phoneNumber" class="form-label">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        <input type="tel" class="form-control" id="phoneNumber" th:field="*{phoneNumber}" placeholder="Enter your phone number">
+                                    </div>
+                                    <div class="form-text">Include country code (e.g., +94 77 123 4567)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Information Section -->
+                    <div class="form-section">
+                        <h5 class="form-section-title">
+                            <i class="fas fa-map-marker-alt me-2"></i>Address Information
+                        </h5>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="form-group">
+                                    <label for="address" class="form-label">Street Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-home"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="address" th:field="*{address}" placeholder="Enter your street address">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="city" class="form-label">City</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-city"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="city" th:field="*{city}" placeholder="Enter your city">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="state" class="form-label">State/Province</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-map"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="state" th:field="*{state}" placeholder="Enter your state">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="zipCode" class="form-label">ZIP/Postal Code</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-mail-bulk"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="zipCode" th:field="*{zipCode}" placeholder="Enter your ZIP code">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="registerBtn">
+                        <span class="btn-text">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </span>
+                        <div class="loading-spinner"></div>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="register-footer">
+                <p>Already have an account? 
+                    <a th:href="@{/login}">Sign in here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Enhanced form validation and user experience
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registerForm');
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            const passwordStrength = document.getElementById('passwordStrength');
+            const passwordMatch = document.getElementById('passwordMatch');
+            const registerBtn = document.getElementById('registerBtn');
+
+            // Real-time validation states
+            const validationStates = {
+                firstName: false,
+                lastName: false,
+                username: false,
+                email: false,
+                password: false,
+                confirmPassword: false,
+                phoneNumber: true // Optional field
+            };
+
+            // Validation patterns
+            const patterns = {
+                firstName: /^[A-Za-z\s'-]{2,50}$/,
+                lastName: /^[A-Za-z\s'-]{2,50}$/,
+                username: /^[A-Za-z0-9_]{3,20}$/,
+                email: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i,
+                phone: /^[\+]?[0-9\s\-\(\)]{7,20}$/
+            };
+
+            // Create validation feedback element
+            function createValidationFeedback(fieldId, message, isValid) {
+                let feedback = document.getElementById(fieldId + 'Feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.id = fieldId + 'Feedback';
+                    feedback.className = 'form-text';
+                    document.getElementById(fieldId).parentNode.parentNode.appendChild(feedback);
+                }
+                
+                if (isValid) {
+                    feedback.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                    feedback.className = 'form-text text-success';
+                } else {
+                    feedback.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+                    feedback.className = 'form-text text-danger';
+                }
+                return feedback;
+            }
+
+            // Real-time field validation
+            function validateField(fieldId, value, pattern, required = true) {
+                const field = document.getElementById(fieldId);
+                const isValid = required ? (value.trim() !== '' && pattern.test(value)) : (value.trim() === '' || pattern.test(value));
+                
+                validationStates[fieldId] = isValid;
+                
+                if (value.trim() === '') {
+                    if (required) {
+                        createValidationFeedback(fieldId, 'This field is required', false);
+                        field.classList.add('is-invalid');
+                        field.classList.remove('is-valid');
+                    } else {
+                        const feedback = document.getElementById(fieldId + 'Feedback');
+                        if (feedback) feedback.remove();
+                        field.classList.remove('is-invalid', 'is-valid');
+                    }
+                } else if (isValid) {
+                    createValidationFeedback(fieldId, 'Looks good!', true);
+                    field.classList.add('is-valid');
+                    field.classList.remove('is-invalid');
+                } else {
+                    let message = '';
+                    switch(fieldId) {
+                        case 'firstName':
+                        case 'lastName':
+                            message = 'Name must be 2-50 characters, letters, spaces, hyphens, and apostrophes only';
+                            break;
+                        case 'username':
+                            message = 'Username must be 3-20 characters, letters, numbers, and underscores only';
+                            break;
+                        case 'email':
+                            message = 'Please enter a valid email address';
+                            break;
+                        case 'phoneNumber':
+                            message = 'Please enter a valid phone number';
+                            break;
+                    }
+                    createValidationFeedback(fieldId, message, false);
+                    field.classList.add('is-invalid');
+                    field.classList.remove('is-valid');
+                }
+                
+                updateSubmitButton();
+            }
+
+            // Username availability check (simulated)
+            function checkUsernameAvailability(username) {
+                if (username.length >= 3 && patterns.username.test(username)) {
+                    // Simulate async check
+                    setTimeout(() => {
+                        const feedback = document.getElementById('usernameFeedback');
+                        if (feedback) {
+                            feedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking availability...';
+                            feedback.className = 'form-text text-info';
+                        }
+                        
+                        // Simulate check result (in real app, this would be an AJAX call)
+                        setTimeout(() => {
+                            const isAvailable = Math.random() > 0.3; // Simulate 70% availability
+                            if (isAvailable) {
+                                createValidationFeedback('username', 'Username is available!', true);
+                                validationStates.username = true;
+                            } else {
+                                createValidationFeedback('username', 'Username is already taken', false);
+                                validationStates.username = false;
+                            }
+                            updateSubmitButton();
+                        }, 1000);
+                    }, 100);
+                }
+            }
+
+            // Email format validation with real-time feedback
+            function validateEmail(email) {
+                const isValid = patterns.email.test(email);
+                validationStates.email = isValid;
+                
+                if (email.trim() === '') {
+                    createValidationFeedback('email', 'Email is required', false);
+                    document.getElementById('email').classList.add('is-invalid');
+                    document.getElementById('email').classList.remove('is-valid');
+                } else if (isValid) {
+                    createValidationFeedback('email', 'Valid email format', true);
+                    document.getElementById('email').classList.add('is-valid');
+                    document.getElementById('email').classList.remove('is-invalid');
+                } else {
+                    createValidationFeedback('email', 'Please enter a valid email address', false);
+                    document.getElementById('email').classList.add('is-invalid');
+                    document.getElementById('email').classList.remove('is-valid');
+                }
+                
+                updateSubmitButton();
+            }
+
+            // Password strength checker with real-time updates
+            function checkPasswordStrength(pwd) {
+                let strength = 0;
+                let feedback = [];
+
+                if (pwd.length >= 8) strength++;
+                else feedback.push('at least 8 characters');
+
+                if (/[a-z]/.test(pwd)) strength++;
+                else feedback.push('lowercase letter');
+
+                if (/[A-Z]/.test(pwd)) strength++;
+                else feedback.push('uppercase letter');
+
+                if (/[0-9]/.test(pwd)) strength++;
+                else feedback.push('number');
+
+                if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+                else feedback.push('special character');
+
+                validationStates.password = strength >= 3;
+
+                if (pwd.length === 0) {
+                    passwordStrength.innerHTML = '';
+                    document.getElementById('password').classList.remove('is-valid', 'is-invalid');
+                } else if (strength < 3) {
+                    passwordStrength.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Weak password. Include: ${feedback.join(', ')}`;
+                    passwordStrength.className = 'password-strength strength-weak';
+                    document.getElementById('password').classList.add('is-invalid');
+                    document.getElementById('password').classList.remove('is-valid');
+                } else if (strength < 5) {
+                    passwordStrength.innerHTML = `<i class="fas fa-check-circle"></i> Medium strength password`;
+                    passwordStrength.className = 'password-strength strength-medium';
+                    document.getElementById('password').classList.add('is-valid');
+                    document.getElementById('password').classList.remove('is-invalid');
+                } else {
+                    passwordStrength.innerHTML = `<i class="fas fa-shield-alt"></i> Strong password`;
+                    passwordStrength.className = 'password-strength strength-strong';
+                    document.getElementById('password').classList.add('is-valid');
+                    document.getElementById('password').classList.remove('is-invalid');
+                }
+                
+                updateSubmitButton();
+            }
+
+            // Password confirmation validation
+            function checkPasswordMatch() {
+                const passwordValue = password.value;
+                const confirmValue = confirmPassword.value;
+                
+                if (confirmValue === '') {
+                    passwordMatch.innerHTML = '';
+                    confirmPassword.setCustomValidity('');
+                    validationStates.confirmPassword = true;
+                } else if (passwordValue === confirmValue && passwordValue.length > 0) {
+                    passwordMatch.innerHTML = '<i class="fas fa-check-circle"></i> Passwords match';
+                    passwordMatch.className = 'form-text text-success';
+                    confirmPassword.setCustomValidity('');
+                    document.getElementById('confirmPassword').classList.add('is-valid');
+                    document.getElementById('confirmPassword').classList.remove('is-invalid');
+                    validationStates.confirmPassword = true;
+                } else {
+                    passwordMatch.innerHTML = '<i class="fas fa-times-circle"></i> Passwords do not match';
+                    passwordMatch.className = 'form-text text-danger';
+                    confirmPassword.setCustomValidity('Passwords do not match');
+                    document.getElementById('confirmPassword').classList.add('is-invalid');
+                    document.getElementById('confirmPassword').classList.remove('is-valid');
+                    validationStates.confirmPassword = false;
+                }
+                
+                updateSubmitButton();
+            }
+
+            // Update submit button state
+            function updateSubmitButton() {
+                const allValid = Object.values(validationStates).every(state => state === true);
+                registerBtn.disabled = !allValid;
+                
+                if (allValid) {
+                    registerBtn.classList.remove('btn-secondary');
+                    registerBtn.classList.add('btn-primary');
+                } else {
+                    registerBtn.classList.remove('btn-primary');
+                    registerBtn.classList.add('btn-secondary');
+                }
+            }
+
+            // Real-time event listeners
+            document.getElementById('firstName').addEventListener('input', function() {
+                validateField('firstName', this.value, patterns.firstName);
+            });
+
+            document.getElementById('lastName').addEventListener('input', function() {
+                validateField('lastName', this.value, patterns.lastName);
+            });
+
+            document.getElementById('username').addEventListener('input', function() {
+                validateField('username', this.value, patterns.username);
+                if (this.value.length >= 3 && patterns.username.test(this.value)) {
+                    checkUsernameAvailability(this.value);
+                }
+            });
+
+            document.getElementById('email').addEventListener('input', function() {
+                validateEmail(this.value);
+            });
+
+            password.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+                checkPasswordMatch();
+            });
+
+            confirmPassword.addEventListener('input', checkPasswordMatch);
+
+            document.getElementById('phoneNumber').addEventListener('input', function() {
+                validateField('phoneNumber', this.value, patterns.phone, false);
+            });
+
+            // Form submission with loading state
+            form.addEventListener('submit', function(e) {
+                const btnText = registerBtn.querySelector('.btn-text');
+                const loadingSpinner = registerBtn.querySelector('.loading-spinner');
+                
+                // Show loading state
+                registerBtn.disabled = true;
+                btnText.style.display = 'none';
+                loadingSpinner.style.display = 'inline-block';
+            });
+
+            // Auto-focus on first name field
+            document.getElementById('firstName').focus();
+
+            // Phone number formatting
+            const phoneInput = document.getElementById('phoneNumber');
+            phoneInput.addEventListener('input', function() {
+                let value = this.value.replace(/\D/g, '');
+                if (value.length > 0 && !value.startsWith('94')) {
+                    value = '94' + value;
+                }
+                if (value.length > 2) {
+                    value = '+' + value.substring(0, 2) + ' ' + value.substring(2);
+                }
+                this.value = value;
+            });
+
+            // Initial validation state
+            updateSubmitButton();
+        });
+    </script>
+</body>
+</html>

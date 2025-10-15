@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Feedback Details</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="/manager/dashboard" class="sidebar-brand">
+                <i class="fas fa-car"></i>
+                Vehicle Service
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a class="nav-link" href="/manager/dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link active" href="/manager/feedbacks">
+                    <i class="fas fa-comments"></i>
+                    Feedback
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">Feedback Details</h1>
+                        <p class="page-subtitle">Detailed view of customer feedback</p>
+                    </div>
+                    <div class="header-actions">
+                        <a href="/manager/feedbacks" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Back to Feedback List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Details -->
+            <div class="card mb-3" th:if="${feedback}">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Feedback Information
+                        </h5>
+                        <button onclick="deleteFeedback([[${feedback.id}]])" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>
+                            Delete Feedback
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Customer Information -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-user me-2"></i>
+                                        Customer Information
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Name:</label>
+                                        <div th:text="${feedback.user.firstName + ' ' + feedback.user.lastName}">Customer Name</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Email:</label>
+                                        <div th:text="${feedback.user.email}">customer@email.com</div>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold">Phone:</label>
+                                        <div th:text="${feedback.user.phoneNumber ?: 'Not provided'}">Not provided</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Booking Information -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-calendar-check me-2"></i>
+                                        Booking Information
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Booking ID:</label>
+                                        <div class="fw-bold text-primary" th:text="${feedback.booking.bookingNumber}">BK001</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Service Type:</label>
+                                        <div th:text="${feedback.booking.serviceType}">Service Type</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Vehicle:</label>
+                                        <div th:text="${feedback.booking.vehicleMake + ' ' + feedback.booking.vehicleModel + ' (' + feedback.booking.vehicleYear + ')'}">Vehicle Info</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Service Date:</label>
+                                        <div th:text="${#temporals.format(feedback.booking.serviceDate, 'EEEE, MMMM dd, yyyy')}">Service Date</div>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold">Status:</label>
+                                        <span class="badge bg-success" th:text="${feedback.booking.paymentStatus}">PAID</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Rating -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-star me-2"></i>
+                                        Rating
+                                    </h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="stars mb-3" th:data-rating="${feedback.rating}">
+                                        <span th:each="i : ${#numbers.sequence(1, 5)}" 
+                                              th:text="${i <= feedback.rating ? '★' : '☆'}" 
+                                              th:class="${i <= feedback.rating ? 'text-warning' : 'text-muted'}"
+                                              class="star-rating"></span>
+                                    </div>
+                                    <div class="fw-bold fs-5" th:text="${feedback.rating} + '★ out of 5★'">5★ out of 5★</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timestamps -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Timestamps
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Submitted:</label>
+                                        <div th:text="${#temporals.format(feedback.createdAt, 'EEEE, MMMM dd, yyyy ''at'' h:mm a')}">Date and time</div>
+                                    </div>
+                                    <div class="mb-0" th:if="${feedback.updatedAt != feedback.createdAt}">
+                                        <label class="form-label fw-semibold">Last Updated:</label>
+                                        <div th:text="${#temporals.format(feedback.updatedAt, 'EEEE, MMMM dd, yyyy ''at'' h:mm a')}">Date and time</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Comment -->
+                        <div class="col-12 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-comment me-2"></i>
+                                        Customer Comment
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-0" th:text="${feedback.comment}">Customer comment here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div class="card" th:unless="${feedback}">
+                <div class="card-body text-center">
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle fa-3x text-muted mb-3"></i>
+                        <h3>Feedback Not Found</h3>
+                        <p class="text-muted">The requested feedback could not be found.</p>
+                        <a href="/manager/feedbacks" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Back to Feedback List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete Feedback</h5>
+                    <button type="button" class="btn-close" onclick="closeDeleteModal()" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this feedback? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let feedbackToDelete = null;
+
+        // Delete feedback
+        function deleteFeedback(feedbackId) {
+            feedbackToDelete = feedbackId;
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+
+        function closeDeleteModal() {
+            feedbackToDelete = null;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+        }
+
+        function confirmDelete() {
+            if (feedbackToDelete) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/manager/feedbacks/' + feedbackToDelete + '/delete';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target === modal) {
+                closeDeleteModal();
+            }
+        }
+    </script>
+</body>
+</html>

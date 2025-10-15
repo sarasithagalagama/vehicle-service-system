@@ -1,0 +1,254 @@
+@startuml Strategy Pattern - Vehicle Service System
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor #E8F4FD
+    BorderColor #2E86C1
+    ArrowColor #2E86C1
+    FontColor #000000
+    FontSize 12
+}
+skinparam interface {
+    BackgroundColor #F0F8FF
+    BorderColor #4169E1
+    FontColor #000000
+    FontSize 12
+}
+skinparam note {
+    BackgroundColor #FFFACD
+    BorderColor #DAA520
+    FontColor #000000
+}
+
+package "Strategy Pattern Implementation" {
+    
+    ' Interface Definition
+    interface PricingStrategy {
+        +calculateBasePrice(serviceType: String): BigDecimal
+        +calculateAdditionalCharges(serviceType: String, basePrice: BigDecimal): BigDecimal
+        +calculateTotalPrice(serviceType: String, basePrice: BigDecimal, additionalCharges: BigDecimal): BigDecimal
+        +getServiceCategory(): String
+        +appliesTo(serviceType: String): boolean
+    }
+    
+    ' Context Class
+    class PricingStrategyManager {
+        -pricingStrategies: List<PricingStrategy>
+        +calculateBasePrice(serviceType: String): BigDecimal
+        +calculateAdditionalCharges(serviceType: String, basePrice: BigDecimal): BigDecimal
+        +calculateTotalPrice(serviceType: String, basePrice: BigDecimal, additionalCharges: BigDecimal): BigDecimal
+        +calculateCompletePricing(serviceType: String): PricingResult
+        -selectStrategy(serviceType: String): PricingStrategy
+        +getAllStrategies(): List<PricingStrategy>
+        +getStrategyForService(serviceType: String): PricingStrategy
+    }
+    
+    ' Concrete Strategy 1
+    class BasicServicePricingStrategy {
+        -OIL_CHANGE_PRICE: BigDecimal = 3600.00
+        -TIRE_ROTATION_PRICE: BigDecimal = 2000.00
+        -AIR_FILTER_REPLACEMENT_PRICE: BigDecimal = 2500.00
+        -SPARK_PLUG_REPLACEMENT_PRICE: BigDecimal = 3000.00
+        -DEFAULT_BASIC_PRICE: BigDecimal = 2000.00
+        +calculateBasePrice(serviceType: String): BigDecimal
+        +calculateAdditionalCharges(serviceType: String, basePrice: BigDecimal): BigDecimal
+        +calculateTotalPrice(serviceType: String, basePrice: BigDecimal, additionalCharges: BigDecimal): BigDecimal
+        +getServiceCategory(): String
+        +appliesTo(serviceType: String): boolean
+    }
+    
+    ' Concrete Strategy 2
+    class AdvancedServicePricingStrategy {
+        -ENGINE_REPAIR_PRICE: BigDecimal = 15000.00
+        -TRANSMISSION_SERVICE_PRICE: BigDecimal = 25000.00
+        -BRAKE_SYSTEM_REPAIR_PRICE: BigDecimal = 12000.00
+        -ELECTRICAL_SYSTEM_REPAIR_PRICE: BigDecimal = 8000.00
+        -AC_SYSTEM_REPAIR_PRICE: BigDecimal = 10000.00
+        -MAJOR_OVERHAUL_PRICE: BigDecimal = 35000.00
+        -DEFAULT_ADVANCED_PRICE: BigDecimal = 15000.00
+        +calculateBasePrice(serviceType: String): BigDecimal
+        +calculateAdditionalCharges(serviceType: String, basePrice: BigDecimal): BigDecimal
+        +calculateTotalPrice(serviceType: String, basePrice: BigDecimal, additionalCharges: BigDecimal): BigDecimal
+        +getServiceCategory(): String
+        +appliesTo(serviceType: String): boolean
+    }
+    
+    ' Concrete Strategy 3
+    class InspectionServicePricingStrategy {
+        -SAFETY_INSPECTION_PRICE: BigDecimal = 3000.00
+        -EMISSIONS_TEST_PRICE: BigDecimal = 2500.00
+        -VEHICLE_DIAGNOSTIC_PRICE: BigDecimal = 4000.00
+        -PRE_PURCHASE_INSPECTION_PRICE: BigDecimal = 5000.00
+        -INSURANCE_INSPECTION_PRICE: BigDecimal = 2000.00
+        -ANNUAL_INSPECTION_PRICE: BigDecimal = 3500.00
+        -DEFAULT_INSPECTION_PRICE: BigDecimal = 3000.00
+        -DETAILED_REPORT_FEE: BigDecimal = 1500.00
+        -CERTIFICATION_FEE: BigDecimal = 500.00
+        -RE_INSPECTION_FEE: BigDecimal = 2000.00
+        +calculateBasePrice(serviceType: String): BigDecimal
+        +calculateAdditionalCharges(serviceType: String, basePrice: BigDecimal): BigDecimal
+        +calculateTotalPrice(serviceType: String, basePrice: BigDecimal, additionalCharges: BigDecimal): BigDecimal
+        +getServiceCategory(): String
+        +appliesTo(serviceType: String): boolean
+    }
+    
+    ' Client Classes
+    class BookingController {
+        -bookingService: BookingService
+        -pricingStrategyManager: PricingStrategyManager
+        +createBooking(request: BookingRequest): String
+        +calculatePrice(serviceType: String): BigDecimal
+        +getBookings(): List<Booking>
+    }
+    
+    class CustomerController {
+        -pricingStrategyManager: PricingStrategyManager
+        +getServicePrice(serviceType: String): BigDecimal
+        +showPricing(serviceType: String): String
+        +bookService(request: BookingRequest): String
+    }
+    
+    class BookingService {
+        -bookingRepository: BookingRepository
+        -pricingStrategyManager: PricingStrategyManager
+        +createBooking(request: BookingRequest): Booking
+        +updateBooking(booking: Booking): Booking
+        +deleteBooking(id: Long): void
+    }
+    
+    ' Result Class
+    class PricingResult {
+        -serviceType: String
+        -serviceCategory: String
+        -basePrice: BigDecimal
+        -additionalCharges: BigDecimal
+        -totalPrice: BigDecimal
+        +getServiceType(): String
+        +getServiceCategory(): String
+        +getBasePrice(): BigDecimal
+        +getAdditionalCharges(): BigDecimal
+        +getTotalPrice(): BigDecimal
+        +toString(): String
+    }
+}
+
+' Relationships
+PricingStrategy <|.. BasicServicePricingStrategy : implements
+PricingStrategy <|.. AdvancedServicePricingStrategy : implements
+PricingStrategy <|.. InspectionServicePricingStrategy : implements
+
+PricingStrategyManager --> PricingStrategy : uses
+PricingStrategyManager --> BasicServicePricingStrategy : selects
+PricingStrategyManager --> AdvancedServicePricingStrategy : selects
+PricingStrategyManager --> InspectionServicePricingStrategy : selects
+PricingStrategyManager --> PricingResult : creates
+
+BookingController --> PricingStrategyManager : uses
+CustomerController --> PricingStrategyManager : uses
+BookingService --> PricingStrategyManager : uses
+
+' Notes explaining the pattern
+note right of PricingStrategy
+  **Strategy Interface**
+  
+  Defines contract for pricing strategies.
+  Contains 5 methods for pricing calculations.
+  
+  **Role:** Strategy Interface
+end note
+
+note right of PricingStrategyManager
+  **Context Class**
+  
+  Manages strategy selection and delegation.
+  Uses @Autowired injection and dynamic selection.
+  
+  **Role:** Context Class
+end note
+
+note right of BasicServicePricingStrategy
+  **Concrete Strategy 1**
+  
+  Handles basic services: Oil changes, tire rotations.
+  Prices: 2000-3600 LKR range.
+  
+  **Role:** Concrete Strategy
+end note
+
+note right of AdvancedServicePricingStrategy
+  **Concrete Strategy 2**
+  
+  Handles complex services: Engine repairs, transmission.
+  Prices: 8000-35000 LKR range.
+  
+  **Role:** Concrete Strategy
+end note
+
+note right of InspectionServicePricingStrategy
+  **Concrete Strategy 3**
+  
+  Handles inspections: Safety, emissions, diagnostics.
+  Prices: 2000-5000 LKR + additional charges.
+  
+  **Role:** Concrete Strategy
+end note
+
+note right of BookingController
+  **Client Class 1**
+  
+  Uses PricingStrategyManager for price calculations.
+  Handles booking creation and customer requests.
+  
+  **Role:** Client Class
+end note
+
+note right of CustomerController
+  **Client Class 2**
+  
+  Provides customer interface for price queries.
+  Handles dynamic pricing display and booking.
+  
+  **Role:** Client Class
+end note
+
+note right of BookingService
+  **Service Layer**
+  
+  Business logic for booking management.
+  Integrates price calculations and data persistence.
+  
+  **Role:** Service Layer
+end note
+
+note right of PricingResult
+  **Result Object**
+  
+  Encapsulates pricing information: service type,
+  base price, additional charges, total price.
+  
+  **Usage:** Returned by PricingStrategyManager
+end note
+
+' Pattern Benefits Note
+note top of PricingStrategyManager
+  **Strategy Pattern Benefits:**
+  
+  ✅ **Flexibility:** Easy to add new strategies
+  ✅ **Maintainability:** Isolated strategies
+  ✅ **Testability:** Independent testing
+  ✅ **Spring Integration:** Automatic injection
+  ✅ **Clean Code:** Simplified structure
+end note
+
+' Implementation Notes
+note bottom of PricingStrategy
+  **Implementation Notes:**
+  
+  🔧 **Spring Annotations:** @Component, @Autowired
+  🔧 **Thread Safety:** @Scope("singleton")
+  🔧 **Clean Comments:** One-line comments
+  🔧 **Professional Code:** Simplified structure
+end note
+
+@enduml

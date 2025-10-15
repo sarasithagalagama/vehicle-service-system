@@ -1,0 +1,2954 @@
+<!DOCTYPE html>
+<!-- Receptionist dashboard template for booking management and customer service -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Meta tags for responsive design and character encoding -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSRF token meta tags for security -->
+    <meta name="_csrf" th:content="${_csrf?.token ?: ''}">
+    <meta name="_csrf_header" th:content="${_csrf?.headerName ?: ''}">
+    <title>Receptionist Dashboard - Vehicle Service System</title>
+    <!-- External CSS libraries for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS for dashboard styling -->
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <style>
+        /* Time Slot Selection Styles - Aligned with dashboard.css */
+        .time-slot-container {
+            position: relative;
+        }
+        
+        .time-slot-container .form-control:disabled {
+            background-color: var(--gray-100);
+            border-color: var(--gray-300);
+            opacity: 0.6;
+        }
+        
+        .time-slot-container .form-control:not(:disabled) {
+            border-color: var(--success-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        .slot-status {
+            font-size: 0.875rem;
+            margin-top: var(--space-1);
+        }
+        
+        .slot-status .fas {
+            width: 1rem;
+        }
+        
+        .slot-status .text-info {
+            color: var(--info-color) !important;
+        }
+        
+        .slot-status .text-success {
+            color: var(--success-color) !important;
+        }
+        
+        .slot-status .text-warning {
+            color: var(--warning-color) !important;
+        }
+        
+        .slot-status .text-danger {
+            color: var(--danger-color) !important;
+        }
+        
+        /* Loading animation */
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Enhanced form styling - using dashboard.css variables */
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-label .fas {
+            color: var(--text-muted);
+        }
+        
+        .form-label small {
+            font-weight: 400;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="/staff/dashboard" class="sidebar-brand">
+                <i class="fas fa-car"></i>
+                Vehicle Service
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="/staff/dashboard" class="nav-link active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/logout" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+            <div>
+                        <h1 class="page-title">Receptionist Dashboard</h1>
+                        <p class="page-subtitle">Manage bookings and customer service</p>
+            </div>
+                    <div class="user-profile">
+                        <div class="avatar" th:text="${user != null and user.firstName != null and user.lastName != null ? user.firstName.substring(0,1) + user.lastName.substring(0,1) : 'RJ'}">RJ</div>
+                <div>
+                            <div class="fw-semibold" th:text="${user != null and user.firstName != null and user.lastName != null ? user.firstName + ' ' + user.lastName : 'Receptionist User'}">Receptionist User</div>
+                            <small class="text-muted" th:text="${user != null and user.role != null ? user.role.roleName : 'Receptionist'}">Receptionist</small>
+            </div>
+                </div>
+            </div>
+        </div>
+
+            <!-- Success/Error Messages -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show staff-alert-success" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${success}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" title="Close alert" aria-label="Close alert"></button>
+                        </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show staff-alert-danger" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" title="Close alert" aria-label="Close alert"></button>
+                    </div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-icon primary">
+                            <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-number" th:text="${customerCount != null ? customerCount : 0}">0</div>
+                    <div class="stat-label">Total Customers</div>
+                    <div class="stat-subtitle">Registered customers</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-icon success">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                    <div class="stat-number" th:text="${todayBookings != null ? todayBookings : 0}">0</div>
+                    <div class="stat-label">Today's Bookings</div>
+                    <div class="stat-subtitle">Scheduled for today</div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-icon warning">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    <div class="stat-number" th:text="${pendingBookings != null ? pendingBookings : 0}">0</div>
+                    <div class="stat-label">Pending Bookings</div>
+                    <div class="stat-subtitle">Awaiting confirmation</div>
+                </div>
+                
+                <div class="stat-card info">
+                    <div class="stat-icon info">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                    <div class="stat-number" th:text="${weekBookings != null ? weekBookings : 0}">0</div>
+                    <div class="stat-label">This Week</div>
+                    <div class="stat-subtitle">Weekly bookings</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="action-card" onclick="showCreateBookingModal()">
+                    <i class="fas fa-plus"></i>
+                    <h5>New Booking</h5>
+                    <p>Create a new service booking</p>
+        </div>
+
+                <div class="action-card" onclick="showAddCustomerModal()">
+                    <i class="fas fa-user-plus"></i>
+                    <h5>Add Customer</h5>
+                    <p>Register a new customer</p>
+                </div>
+                
+            </div>
+
+            <!-- Bookings Management Section -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar me-2"></i>
+                            Bookings Management
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="refreshBookings()" title="Refresh Bookings">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search and Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchInput" 
+                                   placeholder="Search by customer, vehicle, service..." 
+                                   onkeyup="filterBookings()">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="statusFilter" onchange="filterBookings()" aria-label="Filter by status">
+                            <option value="">All Status</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="PAID">Paid</option>
+                            <option value="PARTIAL">Partial</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="serviceTypeFilter" onchange="filterBookings()" aria-label="Filter by service type">
+                            <option value="">All Services</option>
+                            <option value="Oil Change">Oil Change</option>
+                            <option value="Brake Service">Brake Service</option>
+                            <option value="Engine Inspection">Engine Inspection</option>
+                            <option value="Transmission Service">Transmission Service</option>
+                            <option value="Tire Service">Tire Service</option>
+                            <option value="AC Service">AC Service</option>
+                            <option value="Electrical Service">Electrical Service</option>
+                            <option value="General Maintenance">General Maintenance</option>
+                            <option value="Safety Inspection">Safety Inspection</option>
+                            <option value="Emissions Test">Emissions Test</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <input type="date" class="form-control" id="dateFromFilter" onchange="filterBookings()" placeholder="From">
+                    </div>
+                    <div class="col-md-1">
+                        <input type="date" class="form-control" id="dateToFilter" onchange="filterBookings()" placeholder="To">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filter Results Info -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info d-flex align-items-center staff-filter-alert" id="filterInfo" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="filterText">Showing filtered results</span>
+                        </div>
+                    </div>
+                </div>
+                
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                        <table class="table" id="bookingsTable">
+                            <thead>
+                                <tr>
+                                    <th>BOOKING #</th>
+                                    <th>CUSTOMER</th>
+                                    <th>VEHICLE</th>
+                                    <th>SERVICE</th>
+                                    <th>DATE & TIME</th>
+                                    <th>STATUS</th>
+                                    <th>PRICE</th>
+                                    <th>CREATED</th>
+                                    <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                <tr th:if="${allBookings == null or #lists.size(allBookings) == 0}">
+                                    <td colspan="9" class="text-center">
+                                        <div class="empty-state">
+                                            <i class="fas fa-calendar-times fa-2x"></i>
+                                            <h5>No bookings found</h5>
+                                            <p>No bookings found matching your criteria. Try adjusting your search or filter settings.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:each="booking : ${allBookings}" th:if="${allBookings != null and #lists.size(allBookings) > 0}" 
+                                    class="booking-row"
+                                    th:attr="data-customer-name=${booking.customerName},
+                                             data-vehicle-number=${booking.vehicleNumber},
+                                             data-service-type=${booking.serviceType},
+                                             data-booking-number=${booking.bookingNumber},
+                                             data-payment-status=${booking.paymentStatus?.name()},
+                                             data-booking-date=${booking.bookingDate?.toLocalDate()?.toString()}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-2">
+                                                <i class="fas fa-calendar-alt text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold" th:text="${booking.bookingNumber}">BK001</div>
+                                            </div>
+                                        </div>
+                                </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-2 staff-avatar-customer" 
+                                                 th:text="${booking.customerName != null ? booking.customerName.substring(0,1).toUpperCase() : 'C'}">C</div>
+                                            <div>
+                                                <div class="fw-semibold" th:text="${booking.customerName}">John Doe</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-car text-muted me-2"></i>
+                                            <span th:text="${booking.vehicleNumber}">ABC-1234</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge staff-badge-light" th:text="${booking.serviceType}">Oil Change</span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-semibold" th:text="${#temporals.format(booking.bookingDate, 'MMM dd, yyyy')}">Jan 15, 2024</div>
+                                            <small class="text-muted" th:text="${#temporals.format(booking.bookingDate, 'HH:mm')}">09:00</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge" th:classappend="${booking.paymentStatus.name() == 'PENDING'} ? 'status-pending' : 
+                                                                                   (${booking.paymentStatus.name() == 'PAID'} ? 'status-confirmed' : 
+                                                                                   (${booking.paymentStatus.name() == 'ADVANCE'} ? 'status-advance' : 'status-completed'))" 
+                                              th:text="${booking.paymentStatus.name()}">PENDING</span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong th:text="${#numbers.formatDecimal(booking.totalPrice, 1, 2)}">$150.00</strong>
+                                            <div th:if="${booking.additionalCharges > 0}" class="text-muted small">
+                                                +<span th:text="${#numbers.formatDecimal(booking.additionalCharges, 1, 2)}">$0.00</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-muted small" th:text="${#temporals.format(booking.createdAt, 'MMM dd, yyyy')}">Jan 15, 2024</div>
+                                    </td>
+                                    <td>
+                                        <button class="btn-action" title="View Details" th:onclick="'viewBooking(' + ${booking.id} + ')'">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn-action" title="Edit Booking" th:onclick="'editBooking(' + ${booking.id} + ')'">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-action btn-success" title="Process Refund" 
+                                                th:onclick="'processRefund(' + ${booking.id} + ')'"
+                                                th:if="${booking.paymentStatus.name() == 'PAID' or booking.paymentStatus.name() == 'PARTIAL'}">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                        <button class="btn-action btn-warning" title="Cancel Booking" th:onclick="'cancelBooking(' + ${booking.id} + ')'">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button class="btn-action" title="Delete Booking" th:onclick="'deleteBooking(' + ${booking.id} + ')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination Controls -->
+                <div class="card-footer" th:if="${totalPages > 1}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Showing <span th:text="${currentPage * size + 1}">1</span> to 
+                            <span th:text="${(currentPage + 1) * size > totalElements ? totalElements : (currentPage + 1) * size}">5</span> of 
+                            <span th:text="${totalElements}">10</span> bookings
+                            <span th:if="${totalPages > 1}">
+                                | Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${totalPages}">1</span>
+                            </span>
+                        </div>
+                        <nav aria-label="Booking pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <!-- Previous Button -->
+                                <li class="page-item" th:classappend="${!hasPrevious} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/staff/dashboard(page=${currentPage - 1}, size=${size}, search=${search}, status=${status}, serviceType=${serviceType})}" 
+                                       th:if="${hasPrevious}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                    <span class="page-link" th:unless="${hasPrevious}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </span>
+                                </li>
+                                
+                                <!-- Page Numbers -->
+                                <li th:each="pageNum : ${#numbers.sequence(T(java.lang.Math).max(0, currentPage - 2), T(java.lang.Math).min(totalPages - 1, currentPage + 2))}" 
+                                    class="page-item" 
+                                    th:classappend="${pageNum == currentPage} ? 'active'">
+                                    <a class="page-link" 
+                                       th:href="@{/staff/dashboard(page=${pageNum}, size=${size}, search=${search}, status=${status}, serviceType=${serviceType})}"
+                                       th:text="${pageNum + 1}">1</a>
+                                </li>
+                                
+                                <!-- Next Button -->
+                                <li class="page-item" th:classappend="${!hasNext} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/staff/dashboard(page=${currentPage + 1}, size=${size}, search=${search}, status=${status}, serviceType=${serviceType})}" 
+                                       th:if="${hasNext}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                    <span class="page-link" th:unless="${hasNext}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </span>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Create Booking Modal -->
+    <div class="modal fade" id="createBookingModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-calendar-plus me-2 text-primary"></i>Create New Booking
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close modal" aria-label="Close modal"></button>
+                </div>
+                <form action="/staff/bookings" method="post">
+                    <input type="hidden" name="_redirect" value="/staff/dashboard">
+                    <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-user me-2 text-primary"></i>Select Customer
+                                </label>
+                                <select class="form-select" name="customerName" required aria-label="Select customer">
+                                    <option value="">Choose a customer</option>
+                                    <option th:each="customer : ${customers}" 
+                                            th:value="${customer.firstName + ' ' + customer.lastName}"
+                                            th:text="${customer.firstName + ' ' + customer.lastName + ' (' + customer.username + ')'}">
+                                        Customer Name
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-car me-2 text-primary"></i>Vehicle Number
+                                </label>
+                                <input type="text" class="form-control" name="vehicleNumber" placeholder="Enter vehicle number (e.g., ABC-1234)" required 
+                                       pattern="[A-Za-z]{3}-[0-9]{4}" 
+                                       title="Please enter vehicle number in format ABC-1234 (3 letters, hyphen, 4 numbers)">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-wrench me-2 text-primary"></i>Service Type
+                                </label>
+                                <select class="form-select" name="serviceType" id="createServiceType" required aria-label="Select service type">
+                                    <option value="">Select Service</option>
+                                    <option value="Oil Change">Oil Change</option>
+                                    <option value="Brake Service">Brake Service</option>
+                                    <option value="Engine Inspection">Engine Inspection</option>
+                                    <option value="Transmission Service">Transmission Service</option>
+                                    <option value="Tire Service">Tire Service</option>
+                                    <option value="AC Service">AC Service</option>
+                                    <option value="Electrical Service">Electrical Service</option>
+                                    <option value="General Maintenance">General Maintenance</option>
+                                    <option value="Safety Inspection">Safety Inspection</option>
+                                    <option value="Emissions Test">Emissions Test</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar me-2 text-primary"></i>Booking Date
+                                </label>
+                                <input type="date" class="form-control" id="createBookingDate" onchange="loadAvailableSlotsForCreate()" required 
+                                       title="Please select a date at least 2 days in advance (if today is 28th, you can only select from 30th onwards)"
+                                       th:min="${#temporals.format(T(java.time.LocalDate).now().plusDays(2), 'yyyy-MM-dd')}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-4 time-slot-container">
+                                <label class="form-label">
+                                    <i class="fas fa-clock me-2 text-primary"></i>Time Slot
+                                    <small class="text-muted d-block">Available slots will appear after selecting date and service</small>
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select" id="createTimeSlot" name="timeSlot" onchange="updateCreateBookingTime()" required disabled aria-label="Select time slot">
+                                        <option value="">Select a time slot</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAvailableSlotsForCreate()" title="Refresh slots">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <div id="createSlotStatus" class="form-text slot-status"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-dollar-sign me-2 text-success"></i>Service Price
+                                </label>
+                                <input type="number" class="form-control" id="createServicePrice" name="servicePrice" step="0.01" min="0" readonly aria-label="Service Price">
+                                <small class="form-text text-muted">Fixed price based on service type</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-plus-circle me-2 text-warning"></i>Additional Charges
+                                </label>
+                                <input type="number" class="form-control" id="createAdditionalCharges" name="additionalCharges" step="0.01" min="0" max="999999.99" value="0" onchange="updateCreatePricing()" placeholder="Enter additional charges (0.00)" 
+                                       title="Enter additional charges amount" aria-label="Additional Charges">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card me-2 text-info"></i>Payment Status
+                                </label>
+                                <select class="form-select" name="paymentStatus" required onchange="updateCreatePricing()" aria-label="Select payment status">
+                                    <option value="PENDING">Pending</option>
+                                    <option value="PAID">Paid</option>
+                                    <option value="PARTIAL">Partial</option>
+                                    <option value="REFUNDED">Refunded</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-money-bill-wave me-2 text-success"></i>Paid Amount
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="createPaidAmount" name="paidAmount" step="0.01" min="0" max="999999.99" value="0" onchange="updateCreatePricing()" placeholder="Enter paid amount (0.00)" 
+                                           title="Enter the amount already paid by customer" aria-label="Paid Amount">
+                                    <button type="button" class="btn btn-outline-primary" id="createPayFullAmountBtn" onclick="payFullAmountCreate()">
+                                        <i class="fas fa-calculator me-1"></i>Pay Full
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Amount already paid by customer</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card me-2 text-info"></i>Payment Method
+                                </label>
+                                <select class="form-select" id="createPaymentMethod" name="paymentMethod" onchange="updateCreatePricing()" aria-label="Select payment method">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="CASH">Cash</option>
+                                    <option value="VISA">Visa Card</option>
+                                    <option value="MASTERCARD">Mastercard</option>
+                                    <option value="AMEX">American Express</option>
+                                    <option value="CREDIT_CARD">Credit Card</option>
+                                    <option value="DEBIT_CARD">Debit Card</option>
+                                </select>
+                                <small class="form-text text-muted">Payment method used by customer</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-calculator me-2 text-primary"></i>Remaining Amount
+                                </label>
+                                <input type="number" class="form-control" id="createRemainingAmount" name="remainingAmount" step="0.01" min="0" readonly aria-label="Remaining Amount">
+                                <small class="form-text text-muted">Auto-calculated remaining amount</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing Summary -->
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-4">
+                                            <i class="fas fa-calculator me-2"></i>Pricing Summary
+                                        </h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Service Price</div>
+                                                    <div class="h6 mb-0 text-success">LKR <span id="createServicePriceDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Additional Charges</div>
+                                                    <div class="h6 mb-0 text-warning">LKR <span id="createAdditionalChargesDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Processing Fees</div>
+                                                    <div class="h6 mb-0 text-info">LKR <span id="createProcessingFeesDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Total Cost</div>
+                                                    <div class="h6 mb-0 text-primary">LKR <span id="createTotalCostDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Remaining</div>
+                                                    <div class="h6 mb-0 text-info">LKR <span id="createRemainingDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Pay Full Amount Button -->
+                                        <div class="row mt-3">
+                                            <div class="col-12 text-center">
+                                                <button type="button" class="btn btn-success btn-lg px-4 py-2 rounded-pill shadow-sm" id="createPayFullAmountSummaryBtn" onclick="payFullAmountCreate()">
+                                                    <i class="fas fa-credit-card me-2"></i>Pay Full Amount (Including Processing Fees)
+                                                </button>
+                                                <div class="form-text text-muted mt-2">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    This will automatically calculate and set the correct amount including processing fees
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="3" placeholder="Enter any additional notes or special instructions..." 
+                                      maxlength="500" 
+                                      title="Enter any additional notes (max 500 characters)"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-calendar-plus me-2"></i>Create Booking
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Booking Modal -->
+    <div class="modal fade" id="editBookingModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-edit me-2 text-primary"></i>Edit Booking
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close modal" aria-label="Close modal"></button>
+                </div>
+                <form id="editBookingForm" method="post">
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="editBookingId">
+                        <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                        <input type="hidden" name="timeSlot" id="editTimeSlotHidden">
+                        <input type="hidden" name="bookingDate" id="editBookingDateHidden">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-user me-2 text-primary"></i>Select Customer
+                                </label>
+                                <select class="form-select" name="customerName" id="editCustomerName" required aria-label="Select customer">
+                                    <option value="">Choose a customer</option>
+                                    <option th:each="customer : ${customers}" 
+                                            th:value="${customer.firstName + ' ' + customer.lastName}"
+                                            th:text="${customer.firstName + ' ' + customer.lastName + ' (' + customer.username + ')'}">
+                                        Customer Name
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-car me-2 text-primary"></i>Vehicle Number
+                                </label>
+                                <input type="text" class="form-control" name="vehicleNumber" id="editVehicleNumber" placeholder="Enter vehicle number (e.g., ABC-1234)" required 
+                                       pattern="[A-Za-z]{3}-[0-9]{4}" 
+                                       title="Please enter vehicle number in format ABC-1234 (3 letters, hyphen, 4 numbers)">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-wrench me-2 text-primary"></i>Service Type
+                                </label>
+                                <select class="form-select" name="serviceType" id="editServiceType" required aria-label="Select service type">
+                                    <option value="">Select Service</option>
+                                    <option value="Oil Change">Oil Change</option>
+                                    <option value="Brake Service">Brake Service</option>
+                                    <option value="Engine Inspection">Engine Inspection</option>
+                                    <option value="Transmission Service">Transmission Service</option>
+                                    <option value="Tire Service">Tire Service</option>
+                                    <option value="AC Service">AC Service</option>
+                                    <option value="Electrical Service">Electrical Service</option>
+                                    <option value="General Maintenance">General Maintenance</option>
+                                    <option value="Safety Inspection">Safety Inspection</option>
+                                    <option value="Emissions Test">Emissions Test</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-calendar me-2 text-primary"></i>Booking Date
+                                </label>
+                                <input type="date" class="form-control" id="editBookingDate" onchange="updateEditBookingDate(); loadAvailableSlotsForEdit()" required 
+                                       title="Please select a date at least 2 days in advance (if today is 28th, you can only select from 30th onwards)"
+                                       th:min="${#temporals.format(T(java.time.LocalDate).now().plusDays(2), 'yyyy-MM-dd')}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3 time-slot-container">
+                                <label class="form-label">
+                                    <i class="fas fa-clock me-2 text-primary"></i>Time Slot
+                                    <small class="text-muted d-block">Available slots will appear after selecting date and service</small>
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select" id="editTimeSlot" name="timeSlot" onchange="updateEditBookingTime()" required disabled aria-label="Select time slot">
+                                        <option value="">Select a time slot</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadAvailableSlotsForEdit()" title="Refresh slots">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <div id="editSlotStatus" class="form-text slot-status"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-dollar-sign me-2 text-success"></i>Service Price
+                                </label>
+                                <input type="number" class="form-control" name="servicePrice" id="editServicePrice" step="0.01" min="0" readonly aria-label="Service Price">
+                                <small class="form-text text-muted">Fixed price based on service type</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-plus-circle me-2 text-warning"></i>Additional Charges
+                                </label>
+                                <input type="number" class="form-control" name="additionalCharges" id="editAdditionalCharges" step="0.01" min="0" max="999999.99" onchange="updateEditPricing()" placeholder="Enter additional charges (0.00)" 
+                                       title="Enter additional charges amount" aria-label="Additional Charges">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card me-2 text-info"></i>Payment Status
+                                </label>
+                                <select class="form-select" name="paymentStatus" id="editPaymentStatus" required onchange="updateEditPricing()" aria-label="Select payment status">
+                                    <option value="PENDING">Pending</option>
+                                    <option value="PAID">Paid</option>
+                                    <option value="PARTIAL">Partial</option>
+                                    <option value="REFUNDED">Refunded</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-money-bill-wave me-2 text-success"></i>Paid Amount
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="editPaidAmount" name="paidAmount" step="0.01" min="0" max="999999.99" value="0" onchange="updateEditPricing()" placeholder="Enter paid amount (0.00)" 
+                                           title="Enter the amount already paid by customer" aria-label="Paid Amount">
+                                    <button type="button" class="btn btn-outline-primary" id="editPayFullAmountBtn" onclick="payFullAmountEdit()">
+                                        <i class="fas fa-calculator me-1"></i>Pay Full
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Amount already paid by customer</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-credit-card me-2 text-info"></i>Payment Method
+                                </label>
+                                <select class="form-select" id="editPaymentMethod" name="paymentMethod" onchange="updateEditPricing()" aria-label="Select payment method">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="CASH">Cash</option>
+                                    <option value="VISA">Visa Card</option>
+                                    <option value="MASTERCARD">Mastercard</option>
+                                    <option value="AMEX">American Express</option>
+                                    <option value="CREDIT_CARD">Credit Card</option>
+                                    <option value="DEBIT_CARD">Debit Card</option>
+                                </select>
+                                <small class="form-text text-muted">Payment method used by customer</small>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-calculator me-2 text-primary"></i>Remaining Amount
+                                </label>
+                                <input type="number" class="form-control" id="editRemainingAmount" name="remainingAmount" step="0.01" min="0" readonly aria-label="Remaining Amount">
+                                <small class="form-text text-muted">Auto-calculated remaining amount</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing Summary for Edit -->
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-4">
+                                            <i class="fas fa-calculator me-2"></i>Pricing Summary
+                                        </h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Service Price</div>
+                                                    <div class="h6 mb-0 text-success">LKR <span id="editServicePriceDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Additional Charges</div>
+                                                    <div class="h6 mb-0 text-warning">LKR <span id="editAdditionalChargesDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Processing Fees</div>
+                                                    <div class="h6 mb-0 text-info">LKR <span id="editProcessingFeesDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Total Cost</div>
+                                                    <div class="h6 mb-0 text-primary">LKR <span id="editTotalCostDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="p-3 bg-light rounded">
+                                                    <div class="text-muted small mb-1">Remaining</div>
+                                                    <div class="h6 mb-0 text-info">LKR <span id="editRemainingDisplay">0.00</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Pay Full Amount Button -->
+                                        <div class="row mt-3">
+                                            <div class="col-12 text-center">
+                                                <button type="button" class="btn btn-success btn-lg px-4 py-2 rounded-pill shadow-sm" id="editPayFullAmountSummaryBtn" onclick="payFullAmountEdit()">
+                                                    <i class="fas fa-credit-card me-2"></i>Pay Full Amount (Including Processing Fees)
+                                                </button>
+                                                <div class="form-text text-muted mt-2">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    This will automatically calculate and set the correct amount including processing fees
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">
+                                <i class="fas fa-sticky-note me-2 text-primary"></i>Notes
+                            </label>
+                            <textarea class="form-control" name="notes" id="editNotes" rows="3" placeholder="Enter any additional notes or special instructions..." 
+                                      maxlength="500" 
+                                      title="Enter any additional notes (max 500 characters)"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Booking
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Booking Modal -->
+    <div class="modal fade" id="viewBookingModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Booking Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close modal" aria-label="Close modal"></button>
+                </div>
+                <div class="modal-body" id="viewBookingContent">
+                    <!-- Booking details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Delete Booking Confirmation Modal -->
+    <div class="modal fade" id="deleteBookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Booking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this booking?</p>
+                    <div id="deleteBookingDetails">
+                        <!-- Booking details will be shown here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBooking">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div class="modal fade" id="addCustomerModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-user-plus me-2 text-primary"></i>Add New Customer
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close modal" aria-label="Close modal"></button>
+                </div>
+                <form action="/staff/receptionist/customers/create" method="post">
+                    <input type="hidden" name="_redirect" value="/staff/dashboard">
+                    <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-user me-2 text-primary"></i>First Name *
+                                </label>
+                                <input type="text" class="form-control" name="firstName" placeholder="Enter first name (letters only)" required 
+                                       minlength="2" maxlength="50" 
+                                       pattern="[A-Za-z\s]+" 
+                                       title="Please enter a valid first name (letters and spaces only)"
+                                       onkeypress="return /[A-Za-z\s]/.test(event.key)">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-user me-2 text-primary"></i>Last Name *
+                                </label>
+                                <input type="text" class="form-control" name="lastName" placeholder="Enter last name (letters only)" required 
+                                       minlength="2" maxlength="50" 
+                                       pattern="[A-Za-z\s]+" 
+                                       title="Please enter a valid last name (letters and spaces only)"
+                                       onkeypress="return /[A-Za-z\s]/.test(event.key)">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-at me-2 text-primary"></i>Username *
+                                </label>
+                                <input type="text" class="form-control" name="username" placeholder="Enter username (letters, numbers, underscores)" required 
+                                       minlength="3" maxlength="30" 
+                                       pattern="[A-Za-z0-9_]+" 
+                                       title="Username must be 3-30 characters (letters, numbers, and underscores only)">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-envelope me-2 text-primary"></i>Email *
+                                </label>
+                                <input type="email" class="form-control" name="email" placeholder="Enter email address (e.g., user@example.com)" required 
+                                       maxlength="100" 
+                                       title="Please enter a valid email address">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-lock me-2 text-primary"></i>Password *
+                                </label>
+                                <div class="position-relative">
+                                    <input type="password" class="form-control pe-5" name="password" id="passwordField" placeholder="Enter password" required 
+                                           minlength="6" maxlength="50" 
+                                           title="Password must be at least 6 characters long">
+                                    <button class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 staff-password-toggle" type="button" id="togglePassword" onclick="togglePasswordVisibility()" title="Toggle password visibility" aria-label="Toggle password visibility">
+                                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-phone me-2 text-primary"></i>Phone Number
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+94</span>
+                                    <input type="tel" class="form-control" name="phoneNumber" placeholder="Enter 9-digit phone number (e.g., 712345678)" 
+                                           pattern="[0-9]{9}" 
+                                           maxlength="9" 
+                                           minlength="9"
+                                           title="Please enter a valid 9-digit Sri Lankan phone number"
+                                           onkeypress="return /[0-9]/.test(event.key)">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>Address
+                                </label>
+                                <input type="text" class="form-control" name="address" placeholder="Enter full address (street, city, state)" 
+                                       maxlength="200" 
+                                       title="Enter the customer's full address">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-city me-2 text-primary"></i>City
+                                </label>
+                                <input type="text" class="form-control" name="city" placeholder="Enter city name (letters only)" 
+                                       maxlength="50" 
+                                       pattern="[A-Za-z\s]+" 
+                                       title="Please enter a valid city name"
+                                       onkeypress="return /[A-Za-z\s]/.test(event.key)">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-map me-2 text-primary"></i>State
+                                </label>
+                                <input type="text" class="form-control" name="state" placeholder="Enter state name (letters only)" 
+                                       maxlength="50" 
+                                       pattern="[A-Za-z\s]+" 
+                                       title="Please enter a valid state name"
+                                       onkeypress="return /[A-Za-z\s]/.test(event.key)">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">
+                                    <i class="fas fa-mail-bulk me-2 text-primary"></i>Zip Code
+                                </label>
+                                <input type="text" class="form-control" name="zipCode" placeholder="Enter zip code (numbers only, e.g., 12345)" 
+                                       pattern="[0-9]+" 
+                                       maxlength="10" 
+                                       title="Please enter a valid zip code (numbers only)"
+                                       onkeypress="return /[0-9]/.test(event.key)">
+                            </div>
+                        </div>
+                        <!-- Customer status is automatically set to active -->
+                        <input type="hidden" name="isActive" value="true">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Add Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stat cards on load
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('animate-slide-in');
+            });
+
+            // Add hover effects to quick action cards
+            const quickActionCards = document.querySelectorAll('.quick-action-card');
+            quickActionCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+            
+            // Set up periodic slot availability refresh for real-time updates
+            setInterval(() => {
+                // Only refresh if modals are open and have dates selected
+                const createModal = document.getElementById('createBookingModal');
+                const editModal = document.getElementById('editBookingModal');
+                
+                if ((createModal && createModal.classList.contains('show')) || 
+                    (editModal && editModal.classList.contains('show'))) {
+                    refreshSlotAvailability();
+                }
+            }, 30000); // Refresh every 30 seconds when modals are open
+        });
+
+        // Modal functions
+        function showCreateBookingModal() {
+            // Reset form when opening
+            const form = document.querySelector('form[action="/staff/bookings"]');
+            if (form) {
+                form.reset();
+                // Reset time slot dropdown
+                const timeSlotSelect = document.getElementById('createTimeSlot');
+                if (timeSlotSelect) {
+                    timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+                    timeSlotSelect.disabled = true;
+                }
+                // Reset slot status
+                const slotStatus = document.getElementById('createSlotStatus');
+                if (slotStatus) {
+                    slotStatus.innerHTML = '';
+                }
+            }
+            
+            // Refresh slot availability for real-time updates
+            setTimeout(() => {
+                refreshSlotAvailability();
+            }, 100);
+            
+            new bootstrap.Modal(document.getElementById('createBookingModal')).show();
+        }
+
+        function showAddCustomerModal() {
+            // Reset form when opening
+            const form = document.querySelector('form[action="/staff/receptionist/customers/create"]');
+            if (form) {
+                form.reset();
+            }
+            new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
+        }
+
+
+        // Booking CRUD functions
+        function viewBooking(bookingId) {
+            console.log('View booking clicked for ID:', bookingId);
+            // Convert bookingId to number if it's a string
+            const numericBookingId = parseInt(bookingId);
+            // Fetch booking details and show modal
+            fetch(`/staff/bookings/${numericBookingId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Booking not found');
+                    }
+                    return response.json();
+                })
+                .then(booking => {
+                    console.log('Booking data received:', booking);
+                    // Format dates
+                    const formatDate = (dateString) => {
+                        if (!dateString) return 'N/A';
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                    };
+
+                    const formatDateTime = (dateString) => {
+                        if (!dateString) return 'N/A';
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    };
+
+                    // Format currency
+                    const formatCurrency = (amount) => {
+                        if (!amount) return 'LKR 0.00';
+                        return `LKR ${parseFloat(amount).toFixed(2)}`;
+                    };
+
+                    // Get status badge class
+                    const getStatusBadgeClass = (status) => {
+                        switch(status) {
+                            case 'PENDING': return 'bg-warning';
+                            case 'PAID': return 'bg-success';
+                            case 'PARTIAL': return 'bg-info';
+                            case 'REFUNDED': return 'bg-secondary';
+                            default: return 'bg-primary';
+                        }
+                    };
+
+                    document.getElementById('viewBookingContent').innerHTML = `
+                        <!-- Booking Header -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <h6 class="text-muted mb-1">Booking Information</h6>
+                                <h5 class="mb-0">${booking.bookingNumber || 'N/A'}</h5>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="badge ${getStatusBadgeClass(booking.paymentStatus)}">
+                                    ${booking.paymentStatus || 'Unknown'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Customer & Vehicle Details -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Customer Details</h6>
+                                        ${booking.customerName ? `<div class="mb-2"><strong>Name:</strong> ${booking.customerName}</div>` : ''}
+                                        ${booking.customerPhone ? `<div class="mb-2"><strong>Contact:</strong> ${booking.customerPhone}</div>` : ''}
+                                        ${booking.customerEmail ? `<div class="mb-0"><strong>Email:</strong> ${booking.customerEmail}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Vehicle Details</h6>
+                                        ${booking.vehicleNumber ? `<div class="mb-2"><strong>Vehicle Number:</strong> ${booking.vehicleNumber}</div>` : ''}
+                                        ${(booking.vehicleMake || booking.vehicleModel) ? `<div class="mb-2"><strong>Make/Model:</strong> ${booking.vehicleMake || ''} ${booking.vehicleModel || ''}</div>` : ''}
+                                        ${booking.vehicleYear ? `<div class="mb-0"><strong>Year:</strong> ${booking.vehicleYear}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service & Scheduling -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Service Details</h6>
+                                        ${booking.serviceType ? `<div class="mb-2"><strong>Service Type:</strong> ${booking.serviceType}</div>` : ''}
+                                        ${booking.serviceDescription && booking.serviceDescription !== 'Standard service' ? `<div class="mb-2"><strong>Description:</strong> ${booking.serviceDescription}</div>` : ''}
+                                        ${booking.priority && booking.priority !== 'Normal' ? `<div class="mb-0"><strong>Priority:</strong> ${booking.priority}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Schedule</h6>
+                                        ${booking.bookingDate ? `<div class="mb-2"><strong>Booking Date:</strong> ${formatDate(booking.bookingDate)}</div>` : ''}
+                                        ${booking.timeSlot ? `<div class="mb-2"><strong>Time Slot:</strong> ${booking.timeSlot}</div>` : ''}
+                                        ${booking.createdAt ? `<div class="mb-0"><strong>Created:</strong> ${formatDateTime(booking.createdAt)}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing Details -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Pricing Summary</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="text-muted small">Service Price</div>
+                                                    <div class="h6 mb-0">${formatCurrency(booking.servicePrice)}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="text-muted small">Additional Charges</div>
+                                                    <div class="h6 mb-0">${formatCurrency(booking.additionalCharges)}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="text-muted small">Paid Amount</div>
+                                                    <div class="h6 mb-0">${formatCurrency(booking.paidAmount)}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="text-muted small">Total Cost</div>
+                                                    <div class="h6 mb-0">${formatCurrency(booking.totalPrice)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        ${booking.remainingAmount && parseFloat(booking.remainingAmount) > 0 ? `
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <div class="alert alert-warning mb-0">
+                                                    <strong>Remaining Amount:</strong> ${formatCurrency(booking.remainingAmount)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes & Additional Info -->
+                        <div class="row">
+                            ${booking.notes ? `
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Notes & Instructions</h6>
+                                        <div class="mb-2">
+                                            <strong>Customer Notes:</strong>
+                                        </div>
+                                        <div class="p-3 bg-light rounded">
+                                            ${booking.notes}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-3">Additional Info</h6>
+                                        ${booking.id ? `<div class="mb-2"><strong>Booking ID:</strong><br><small class="text-muted">${booking.id}</small></div>` : ''}
+                                        ${booking.updatedAt ? `<div class="mb-2"><strong>Last Updated:</strong><br><small class="text-muted">${formatDateTime(booking.updatedAt)}</small></div>` : ''}
+                                        ${booking.assignedStaff ? `<div class="mb-0"><strong>Assigned Staff:</strong><br><small class="text-muted">${booking.assignedStaff}</small></div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    new bootstrap.Modal(document.getElementById('viewBookingModal')).show();
+                })
+                .catch(error => {
+                    console.error('Error loading booking details:', error);
+                    document.getElementById('viewBookingContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> Could not load booking details. ${error.message}
+                        </div>
+                    `;
+                    new bootstrap.Modal(document.getElementById('viewBookingModal')).show();
+                });
+        }
+
+        function editBooking(bookingId) {
+            console.log('Edit booking clicked for ID:', bookingId, 'Type:', typeof bookingId);
+            // Convert bookingId to number if it's a string
+            const numericBookingId = parseInt(bookingId);
+            console.log('Converted booking ID:', numericBookingId);
+            // Fetch booking data and populate edit form
+            fetch(`/staff/bookings/${numericBookingId}`)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    if (!response.ok) {
+                        throw new Error(`Booking not found (Status: ${response.status})`);
+                    }
+                    return response.json();
+                })
+                .then(booking => {
+                    console.log('Booking data for edit:', booking);
+                    document.getElementById('editBookingId').value = booking.id;
+                    // Set customer dropdown value
+                    const customerSelect = document.getElementById('editCustomerName');
+                    customerSelect.value = booking.customerName || '';
+                    document.getElementById('editVehicleNumber').value = booking.vehicleNumber || '';
+                    document.getElementById('editServiceType').value = booking.serviceType || '';
+                    
+                    // Format date for date input and extract time
+                    if (booking.bookingDate) {
+                        const date = new Date(booking.bookingDate);
+                        const dateStr = date.toISOString().slice(0, 10);
+                        const timeStr = date.toISOString().slice(11, 16);
+                        
+                        document.getElementById('editBookingDate').value = dateStr;
+                        document.getElementById('editBookingDateHidden').value = dateStr;
+                        
+                        // Load slots for the date and then select the time
+                        loadAvailableSlotsForEdit();
+                        
+                        // Set the time slot after a short delay to allow slots to load
+                        setTimeout(() => {
+                            const timeSlotSelect = document.getElementById('editTimeSlot');
+                            timeSlotSelect.value = timeStr;
+                        }, 500);
+                    }
+                    
+                    // Populate pricing fields
+                    document.getElementById('editServicePrice').value = booking.servicePrice || '';
+                    document.getElementById('editAdditionalCharges').value = booking.additionalCharges || '';
+                    document.getElementById('editPaymentStatus').value = booking.paymentStatus || '';
+                    document.getElementById('editPaymentMethod').value = booking.paymentMethod || '';
+                    document.getElementById('editPaidAmount').value = booking.paidAmount || '';
+                    document.getElementById('editRemainingAmount').value = booking.remainingAmount || '';
+                    document.getElementById('editNotes').value = booking.notes || '';
+                    
+                    // Update pricing displays
+                    updateEditPricing();
+                    
+                    // Populate pricing summary with current values
+                    const servicePrice = parseFloat(booking.servicePrice) || 0;
+                    const additionalCharges = parseFloat(booking.additionalCharges) || 0;
+                    const paidAmount = parseFloat(booking.paidAmount) || 0;
+                    const paymentMethod = booking.paymentMethod || '';
+                    
+                    // Calculate processing fees based on paid amount and payment method
+                    const processingFees = calculateProcessingFees(paidAmount, paymentMethod);
+                    
+                    // Calculate total cost including processing fees
+                    const totalCost = servicePrice + additionalCharges + processingFees;
+                    const remaining = parseFloat(booking.remainingAmount) || 0;
+                    
+                    // Update pricing summary displays
+                    document.getElementById('editServicePriceDisplay').textContent = servicePrice.toFixed(2);
+                    document.getElementById('editAdditionalChargesDisplay').textContent = additionalCharges.toFixed(2);
+                    document.getElementById('editProcessingFeesDisplay').textContent = processingFees.toFixed(2);
+                    document.getElementById('editTotalCostDisplay').textContent = totalCost.toFixed(2);
+                    document.getElementById('editRemainingDisplay').textContent = remaining.toFixed(2);
+                    
+                    // Set the form action
+                    document.getElementById('editBookingForm').action = `/staff/bookings/${numericBookingId}/edit`;
+                    
+                    // Add redirect parameter if not exists
+                    let redirectInput = document.getElementById('editBookingForm').querySelector('input[name="_redirect"]');
+                    if (!redirectInput) {
+                        redirectInput = document.createElement('input');
+                        redirectInput.type = 'hidden';
+                        redirectInput.name = '_redirect';
+                        redirectInput.value = '/staff/dashboard';
+                        document.getElementById('editBookingForm').appendChild(redirectInput);
+                    }
+                    
+                    new bootstrap.Modal(document.getElementById('editBookingModal')).show();
+                })
+                .catch(error => {
+                    console.error('Error loading booking:', error);
+                    alert('Error loading booking data: ' + error.message);
+                });
+        }
+
+        // Global variable to store the booking ID for deletion
+        let bookingToDelete = null;
+
+        function deleteBooking(bookingId) {
+            const numericBookingId = parseInt(bookingId);
+            bookingToDelete = numericBookingId;
+            
+            // Show simple confirmation modal
+            new bootstrap.Modal(document.getElementById('deleteBookingModal')).show();
+        }
+
+        // Function to handle the actual deletion after confirmation
+        function confirmDeleteBooking() {
+            if (!bookingToDelete) return;
+            
+            fetch(`/staff/bookings/${bookingToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Booking deleted successfully!');
+                    window.location.reload();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting booking:', error);
+                alert('Error deleting booking: ' + error.message);
+            });
+        }
+        
+        // Function to process refund for a booking
+        function processRefund(bookingId) {
+            console.log('Process refund clicked for ID:', bookingId, 'Type:', typeof bookingId);
+            // Convert bookingId to number if it's a string
+            const numericBookingId = parseInt(bookingId);
+            console.log('Converted booking ID:', numericBookingId);
+            
+            if (confirm('Are you sure you want to process a refund for this booking? This will set the payment status to REFUNDED.')) {
+                fetch(`/staff/bookings/${numericBookingId}/refund`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Refund processed successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error processing refund: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error processing refund: ' + error.message);
+                });
+            }
+        }
+        
+        // Function to cancel a booking
+        function cancelBooking(bookingId) {
+            console.log('Cancel booking clicked for ID:', bookingId, 'Type:', typeof bookingId);
+            // Convert bookingId to number if it's a string
+            const numericBookingId = parseInt(bookingId);
+            console.log('Converted booking ID:', numericBookingId);
+            
+            const processRefund = confirm('Do you want to process a refund for this booking?');
+            if (confirm('Are you sure you want to cancel this booking?')) {
+                fetch(`/staff/bookings/${numericBookingId}/cancel?processRefund=${processRefund}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error cancelling booking: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error cancelling booking: ' + error.message);
+                });
+            }
+        }
+
+        
+        // Test if functions are loaded
+        console.log('Dashboard JavaScript loaded successfully');
+        console.log('Available functions:', {
+            viewBooking: typeof viewBooking,
+            editBooking: typeof editBooking,
+            deleteBooking: typeof deleteBooking
+        });
+
+        // =================== CREATE BOOKING SLOT SELECTION ===================
+        
+        // Function to load available slots for create booking
+        function loadAvailableSlotsForCreate() {
+            const dateInput = document.getElementById('createBookingDate');
+            const serviceTypeSelect = document.getElementById('createServiceType');
+            const timeSlotSelect = document.getElementById('createTimeSlot');
+            const slotStatus = document.getElementById('createSlotStatus');
+            
+            if (!dateInput.value) {
+                timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+                timeSlotSelect.disabled = true;
+                slotStatus.innerHTML = '<span class="text-muted">Please select a date first</span>';
+                return;
+            }
+            
+            // Clear and add loading option
+            timeSlotSelect.innerHTML = '<option value="">Loading slots...</option>';
+            timeSlotSelect.disabled = true;
+            slotStatus.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>Loading available slots...</span>';
+            
+            // Get service type for filtering slots
+            const serviceType = serviceTypeSelect.value || '';
+            const url = serviceType ? 
+                `/customer/slots/available?date=${dateInput.value}&serviceType=${encodeURIComponent(serviceType)}` :
+                `/customer/slots/available?date=${dateInput.value}`;
+            
+            // Fetch available slots from API with real-time data
+            console.log('Fetching slots from URL:', url);
+            fetch(url)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(slots => {
+                    console.log('Received slots (real-time):', slots);
+                    populateCreateTimeSlots(slots);
+                })
+                .catch(error => {
+                    console.error('Error loading slots:', error);
+                    timeSlotSelect.innerHTML = '<option value="">Error loading slots</option>';
+                    timeSlotSelect.disabled = false;
+                    slotStatus.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Error loading slots. Please try again.</span>';
+                });
+        }
+
+        // Function to populate time slots dropdown for create booking
+        function populateCreateTimeSlots(slots) {
+            console.log('populateCreateTimeSlots called with:', slots);
+            const timeSlotSelect = document.getElementById('createTimeSlot');
+            const slotStatus = document.getElementById('createSlotStatus');
+            
+            if (!slots || slots.length === 0) {
+                console.log('No slots available');
+                timeSlotSelect.innerHTML = '<option value="">No slots available</option>';
+                timeSlotSelect.disabled = false;
+                slotStatus.innerHTML = '<span class="text-warning"><i class="fas fa-exclamation-circle me-1"></i>No available slots for this date and service type</span>';
+                return;
+            }
+            
+            // Clear and populate dropdown
+            timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+            console.log('Processing', slots.length, 'slots');
+            
+            let availableCount = 0;
+            slots.forEach((slot, index) => {
+                console.log(`Slot ${index}:`, slot);
+                if (slot.available) {
+                    const option = document.createElement('option');
+                    option.value = slot.startTime;
+                    option.textContent = `${slot.formattedTime} (${slot.remainingSlots} slots left)`;
+                    timeSlotSelect.appendChild(option);
+                    availableCount++;
+                    console.log('Added option:', option.textContent);
+                }
+            });
+            
+            timeSlotSelect.disabled = false;
+            slotStatus.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>${availableCount} available slots found</span>`;
+            console.log('Final dropdown options:', timeSlotSelect.options.length);
+        }
+
+        // Function to update booking time when slot is selected
+        function updateCreateBookingTime() {
+            const timeSlotSelect = document.getElementById('createTimeSlot');
+            window.createSelectedSlotTime = timeSlotSelect.value;
+        }
+
+        // =================== EDIT BOOKING SLOT SELECTION ===================
+        
+        // Function to update hidden booking date field
+        function updateEditBookingDate() {
+            const dateInput = document.getElementById('editBookingDate');
+            const hiddenDateInput = document.getElementById('editBookingDateHidden');
+            if (dateInput && hiddenDateInput) {
+                hiddenDateInput.value = dateInput.value;
+            }
+        }
+        
+        // Function to load available slots for edit booking
+        function loadAvailableSlotsForEdit() {
+            const dateInput = document.getElementById('editBookingDate');
+            const serviceTypeSelect = document.getElementById('editServiceType');
+            const timeSlotSelect = document.getElementById('editTimeSlot');
+            const slotStatus = document.getElementById('editSlotStatus');
+            
+            if (!dateInput.value) {
+                timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+                timeSlotSelect.disabled = true;
+                slotStatus.innerHTML = '<span class="text-muted">Please select a date first</span>';
+                return;
+            }
+            
+            // Clear and add loading option
+            timeSlotSelect.innerHTML = '<option value="">Loading slots...</option>';
+            timeSlotSelect.disabled = true;
+            slotStatus.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>Loading available slots...</span>';
+            
+            // Get service type for filtering slots
+            const serviceType = serviceTypeSelect.value || '';
+            const url = serviceType ? 
+                `/customer/slots/available?date=${dateInput.value}&serviceType=${encodeURIComponent(serviceType)}` :
+                `/customer/slots/available?date=${dateInput.value}`;
+            
+            // Fetch available slots from API with real-time data
+            console.log('Fetching edit slots from URL:', url);
+            fetch(url)
+                .then(response => {
+                    console.log('Edit response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(slots => {
+                    console.log('Received edit slots (real-time):', slots);
+                    populateEditTimeSlots(slots);
+                })
+                .catch(error => {
+                    console.error('Error loading edit slots:', error);
+                    timeSlotSelect.innerHTML = '<option value="">Error loading slots</option>';
+                    timeSlotSelect.disabled = false;
+                    slotStatus.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Error loading slots. Please try again.</span>';
+                });
+        }
+
+        // Function to populate time slots dropdown for edit booking
+        function populateEditTimeSlots(slots) {
+            console.log('populateEditTimeSlots called with:', slots);
+            const timeSlotSelect = document.getElementById('editTimeSlot');
+            const slotStatus = document.getElementById('editSlotStatus');
+            
+            if (!slots || slots.length === 0) {
+                console.log('No edit slots available');
+                timeSlotSelect.innerHTML = '<option value="">No slots available</option>';
+                timeSlotSelect.disabled = false;
+                slotStatus.innerHTML = '<span class="text-warning"><i class="fas fa-exclamation-circle me-1"></i>No available slots for this date and service type</span>';
+                return;
+            }
+            
+            // Clear and populate dropdown
+            timeSlotSelect.innerHTML = '<option value="">Select a time slot</option>';
+            console.log('Processing', slots.length, 'edit slots');
+            
+            let availableCount = 0;
+            slots.forEach((slot, index) => {
+                console.log(`Edit slot ${index}:`, slot);
+                if (slot.available) {
+                    const option = document.createElement('option');
+                    option.value = slot.startTime;
+                    option.textContent = `${slot.formattedTime} (${slot.remainingSlots} slots left)`;
+                    timeSlotSelect.appendChild(option);
+                    availableCount++;
+                    console.log('Added edit option:', option.textContent);
+                }
+            });
+            
+            timeSlotSelect.disabled = false;
+            slotStatus.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>${availableCount} available slots found</span>`;
+            console.log('Final edit dropdown options:', timeSlotSelect.options.length);
+        }
+
+        // Function to update booking time when slot is selected
+        function updateEditBookingTime() {
+            const timeSlotSelect = document.getElementById('editTimeSlot');
+            const timeSlotHidden = document.getElementById('editTimeSlotHidden');
+            window.editSelectedSlotTime = timeSlotSelect.value;
+            timeSlotHidden.value = timeSlotSelect.value;
+        }
+
+        // Function to refresh slot availability after booking changes
+        function refreshSlotAvailability() {
+            console.log('Refreshing slot availability for real-time updates...');
+            
+            // Call backend refresh endpoint
+            fetch('/staff/slots/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Slot availability refreshed:', data);
+                
+                // Refresh create form slots if date is selected
+                const createDateInput = document.getElementById('createBookingDate');
+                if (createDateInput && createDateInput.value) {
+                    loadAvailableSlotsForCreate();
+                }
+                
+                // Refresh edit form slots if date is selected
+                const editDateInput = document.getElementById('editBookingDate');
+                if (editDateInput && editDateInput.value) {
+                    loadAvailableSlotsForEdit();
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing slot availability:', error);
+                // Still try to refresh the forms even if the backend call fails
+                const createDateInput = document.getElementById('createBookingDate');
+                if (createDateInput && createDateInput.value) {
+                    loadAvailableSlotsForCreate();
+                }
+                
+                const editDateInput = document.getElementById('editBookingDate');
+                if (editDateInput && editDateInput.value) {
+                    loadAvailableSlotsForEdit();
+                }
+            });
+        }
+
+        // Global function to refresh all slot availability
+        function refreshAllSlotAvailability() {
+            console.log('Refreshing all slot availability...');
+            refreshSlotAvailability();
+        }
+
+        // =================== PRICING CALCULATIONS ===================
+        
+        // Pay Full Amount functions for receptionist dashboard
+        function payFullAmountCreate() {
+            const serviceType = document.getElementById('createServiceType').value;
+            const additionalCharges = parseFloat(document.getElementById('createAdditionalCharges').value) || 0;
+            const paymentMethod = document.getElementById('createPaymentMethod').value;
+            
+            if (!serviceType) {
+                alert('Please select a service type first.');
+                return;
+            }
+            
+            if (!paymentMethod) {
+                alert('Please select a payment method first.');
+                return;
+            }
+            
+            // Show loading state
+            const payFullBtn = document.getElementById('createPayFullAmountBtn');
+            const payFullSummaryBtn = document.getElementById('createPayFullAmountSummaryBtn');
+            const originalText = payFullBtn.innerHTML;
+            const originalSummaryText = payFullSummaryBtn.innerHTML;
+            
+            payFullBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculating...';
+            payFullBtn.disabled = true;
+            payFullSummaryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+            payFullSummaryBtn.disabled = true;
+            
+            // Fetch service pricing from backend
+            fetch(`/staff/pricing/calculate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `serviceType=${serviceType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const servicePrice = parseFloat(data.basePrice);
+                    
+                    if (paymentMethod !== "CASH") {
+                        // Calculate processing fees for card payments
+                        const payingAmount = servicePrice + additionalCharges;
+                        calculateStaffProcessingFees(payingAmount, paymentMethod, (processingFees) => {
+                            const totalCost = servicePrice + additionalCharges + processingFees;
+                            document.getElementById('createPaidAmount').value = totalCost.toFixed(2);
+                            
+                            // Show success message
+                            payFullBtn.innerHTML = '<i class="fas fa-check me-1"></i>Amount Set!';
+                            payFullBtn.classList.remove('btn-outline-primary');
+                            payFullBtn.classList.add('btn-success');
+                            payFullSummaryBtn.innerHTML = '<i class="fas fa-check me-2"></i>Amount Set Successfully!';
+                            payFullSummaryBtn.classList.remove('btn-success');
+                            payFullSummaryBtn.classList.add('btn-success');
+                            
+                            // Reset button after 2 seconds
+                            setTimeout(() => {
+                                payFullBtn.innerHTML = originalText;
+                                payFullBtn.classList.remove('btn-success');
+                                payFullBtn.classList.add('btn-outline-primary');
+                                payFullBtn.disabled = false;
+                                payFullSummaryBtn.innerHTML = originalSummaryText;
+                                payFullSummaryBtn.disabled = false;
+                            }, 2000);
+                            
+                            updateCreatePricing();
+                        });
+                    } else {
+                        // For cash payments, no processing fees
+                        const totalCost = servicePrice + additionalCharges;
+                        document.getElementById('createPaidAmount').value = totalCost.toFixed(2);
+                        
+                        // Show success message
+                        payFullBtn.innerHTML = '<i class="fas fa-check me-1"></i>Amount Set!';
+                        payFullBtn.classList.remove('btn-outline-primary');
+                        payFullBtn.classList.add('btn-success');
+                        payFullSummaryBtn.innerHTML = '<i class="fas fa-check me-2"></i>Amount Set Successfully!';
+                        payFullSummaryBtn.classList.remove('btn-success');
+                        payFullSummaryBtn.classList.add('btn-success');
+                        
+                        // Reset button after 2 seconds
+                        setTimeout(() => {
+                            payFullBtn.innerHTML = originalText;
+                            payFullBtn.classList.remove('btn-success');
+                            payFullBtn.classList.add('btn-outline-primary');
+                            payFullBtn.disabled = false;
+                            payFullSummaryBtn.innerHTML = originalSummaryText;
+                            payFullSummaryBtn.disabled = false;
+                        }, 2000);
+                        
+                        updateCreatePricing();
+                    }
+                } else {
+                    alert('Failed to calculate service pricing: ' + data.error);
+                    payFullBtn.innerHTML = originalText;
+                    payFullBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error calculating pricing:', error);
+                alert('Error calculating pricing. Please try again.');
+                payFullBtn.innerHTML = originalText;
+                payFullBtn.disabled = false;
+            });
+        }
+        
+        function payFullAmountEdit() {
+            const serviceType = document.getElementById('editServiceType').value;
+            const additionalCharges = parseFloat(document.getElementById('editAdditionalCharges').value) || 0;
+            const paymentMethod = document.getElementById('editPaymentMethod').value;
+            
+            if (!serviceType) {
+                alert('Please select a service type first.');
+                return;
+            }
+            
+            if (!paymentMethod) {
+                alert('Please select a payment method first.');
+                return;
+            }
+            
+            // Show loading state
+            const payFullBtn = document.getElementById('editPayFullAmountBtn');
+            const payFullSummaryBtn = document.getElementById('editPayFullAmountSummaryBtn');
+            const originalText = payFullBtn.innerHTML;
+            const originalSummaryText = payFullSummaryBtn.innerHTML;
+            
+            payFullBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculating...';
+            payFullBtn.disabled = true;
+            payFullSummaryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+            payFullSummaryBtn.disabled = true;
+            
+            // Fetch service pricing from backend
+            fetch(`/staff/pricing/calculate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `serviceType=${serviceType}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const servicePrice = parseFloat(data.basePrice);
+                    
+                    if (paymentMethod !== "CASH") {
+                        // Calculate processing fees for card payments
+                        const payingAmount = servicePrice + additionalCharges;
+                        calculateStaffProcessingFees(payingAmount, paymentMethod, (processingFees) => {
+                            const totalCost = servicePrice + additionalCharges + processingFees;
+                            document.getElementById('editPaidAmount').value = totalCost.toFixed(2);
+                            
+                            // Show success message
+                            payFullBtn.innerHTML = '<i class="fas fa-check me-1"></i>Amount Set!';
+                            payFullBtn.classList.remove('btn-outline-primary');
+                            payFullBtn.classList.add('btn-success');
+                            payFullSummaryBtn.innerHTML = '<i class="fas fa-check me-2"></i>Amount Set Successfully!';
+                            payFullSummaryBtn.classList.remove('btn-success');
+                            payFullSummaryBtn.classList.add('btn-success');
+                            
+                            // Reset button after 2 seconds
+                            setTimeout(() => {
+                                payFullBtn.innerHTML = originalText;
+                                payFullBtn.classList.remove('btn-success');
+                                payFullBtn.classList.add('btn-outline-primary');
+                                payFullBtn.disabled = false;
+                                payFullSummaryBtn.innerHTML = originalSummaryText;
+                                payFullSummaryBtn.disabled = false;
+                            }, 2000);
+                            
+                            updateEditPricing();
+                        });
+                    } else {
+                        // For cash payments, no processing fees
+                        const totalCost = servicePrice + additionalCharges;
+                        document.getElementById('editPaidAmount').value = totalCost.toFixed(2);
+                        
+                        // Show success message
+                        payFullBtn.innerHTML = '<i class="fas fa-check me-1"></i>Amount Set!';
+                        payFullBtn.classList.remove('btn-outline-primary');
+                        payFullBtn.classList.add('btn-success');
+                        payFullSummaryBtn.innerHTML = '<i class="fas fa-check me-2"></i>Amount Set Successfully!';
+                        payFullSummaryBtn.classList.remove('btn-success');
+                        payFullSummaryBtn.classList.add('btn-success');
+                        
+                        // Reset button after 2 seconds
+                        setTimeout(() => {
+                            payFullBtn.innerHTML = originalText;
+                            payFullBtn.classList.remove('btn-success');
+                            payFullBtn.classList.add('btn-outline-primary');
+                            payFullBtn.disabled = false;
+                            payFullSummaryBtn.innerHTML = originalSummaryText;
+                            payFullSummaryBtn.disabled = false;
+                        }, 2000);
+                        
+                        updateEditPricing();
+                    }
+                } else {
+                    alert('Failed to calculate service pricing: ' + data.error);
+                    payFullBtn.innerHTML = originalText;
+                    payFullBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error calculating pricing:', error);
+                alert('Error calculating pricing. Please try again.');
+                payFullBtn.innerHTML = originalText;
+                payFullBtn.disabled = false;
+            });
+        }
+        
+        // Helper function to calculate processing fees for staff
+        function calculateStaffProcessingFees(amount, paymentMethod, callback) {
+            if (!paymentMethod || paymentMethod === "CASH" || amount <= 0) {
+                callback(0);
+                return;
+            }
+            
+            fetch('/staff/payment/calculate-fees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `amount=${amount}&paymentMethod=${paymentMethod}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    callback(parseFloat(data.processingFees) || 0);
+                } else {
+                    // Fallback to simple calculation
+                    let processingFees = amount * 0.025; // 2.5% default
+                    if (processingFees < 25) processingFees = 25; // Minimum 25 LKR
+                    callback(processingFees);
+                }
+            })
+            .catch(error => {
+                // Fallback to simple calculation
+                let processingFees = amount * 0.025; // 2.5% default
+                if (processingFees < 25) processingFees = 25; // Minimum 25 LKR
+                callback(processingFees);
+            });
+        }
+        
+        // Update pricing for create booking form
+        // Calculate processing fees based on payment method and amount
+        function calculateProcessingFees(amount, paymentMethod) {
+            if (!paymentMethod || paymentMethod === "CASH" || amount <= 0) {
+                return 0;
+            }
+            
+            // Calculate processing fees for card payments
+            if (paymentMethod === "VISA" || paymentMethod === "MASTERCARD" || 
+                paymentMethod === "AMEX" || paymentMethod === "CREDIT_CARD" || 
+                paymentMethod === "DEBIT_CARD") {
+                // 2.5% processing fee for card payments
+                const processingFees = amount * 0.025;
+                // Minimum 25 LKR fee
+                return Math.max(processingFees, 25);
+            }
+            
+            return 0;
+        }
+
+        function updateCreatePricing() {
+            const serviceType = document.getElementById('createServiceType').value;
+            const additionalCharges = parseFloat(document.getElementById('createAdditionalCharges').value) || 0;
+            const paidAmount = parseFloat(document.getElementById('createPaidAmount').value) || 0;
+            const paymentMethod = document.getElementById('createPaymentMethod').value;
+            const paymentStatus = document.querySelector('select[name="paymentStatus"]').value;
+            
+            if (serviceType) {
+                // Fetch service pricing from backend using pricing strategies
+                fetch(`/staff/pricing/calculate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `serviceType=${encodeURIComponent(serviceType)}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                    if (data.success) {
+                        const servicePrice = parseFloat(data.basePrice);
+                        const additionalChargesFromStrategy = parseFloat(data.additionalCharges);
+                        const totalAdditionalCharges = additionalCharges + additionalChargesFromStrategy;
+                        
+                        // Calculate processing fees using backend
+                        if (paymentMethod && paymentMethod !== "CASH") {
+                            // Calculate processing fees based on service price, not paid amount
+                            const baseAmount = servicePrice + totalAdditionalCharges;
+                            calculateStaffProcessingFees(baseAmount, paymentMethod, (backendProcessingFees) => {
+                                updateCreatePricingDisplay(servicePrice, totalAdditionalCharges, backendProcessingFees, paidAmount);
+                            });
+                        } else {
+                            // No processing fees for cash
+                            updateCreatePricingDisplay(servicePrice, totalAdditionalCharges, 0, paidAmount);
+                        }
+                    } else {
+                        console.error('Error fetching service pricing:', data.error);
+                        // No fallback - pricing should come from backend
+                        const servicePrice = 0; // No fallback pricing
+                        const baseAmount = servicePrice + additionalCharges;
+                        const processingFees = calculateProcessingFees(baseAmount, paymentMethod);
+                        updateCreatePricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching service pricing:', error);
+                    // No fallback - pricing should come from backend
+                    const servicePrice = 0; // No fallback pricing
+                    const baseAmount = servicePrice + additionalCharges;
+                    const processingFees = calculateProcessingFees(baseAmount, paymentMethod);
+                    updateCreatePricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount);
+                });
+            }
+        }
+
+        // Helper function to update create pricing display
+        function updateCreatePricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount) {
+            const totalCost = servicePrice + additionalCharges + processingFees;
+                        const remaining = Math.max(0, totalCost - paidAmount);
+                        
+                        // Update form fields
+                        document.getElementById('createServicePrice').value = servicePrice.toFixed(2);
+                        document.getElementById('createRemainingAmount').value = remaining.toFixed(2);
+                        
+                        // Update display
+                        document.getElementById('createServicePriceDisplay').textContent = servicePrice.toFixed(2);
+                        document.getElementById('createAdditionalChargesDisplay').textContent = additionalCharges.toFixed(2);
+            document.getElementById('createProcessingFeesDisplay').textContent = processingFees.toFixed(2);
+                        document.getElementById('createTotalCostDisplay').textContent = totalCost.toFixed(2);
+                        document.getElementById('createRemainingDisplay').textContent = remaining.toFixed(2);
+        }
+
+        // Calculate processing fees using backend
+        function calculateStaffProcessingFees(amount, paymentMethod, callback) {
+            if (!paymentMethod || paymentMethod === "CASH" || amount <= 0) {
+                callback(0);
+                return;
+            }
+            
+            fetch(`/staff/payment/calculate-fees`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `amount=${amount}&paymentMethod=${encodeURIComponent(paymentMethod)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    callback(parseFloat(data.processingFees));
+                } else {
+                    console.error('Error calculating processing fees:', data.error);
+                    // Fallback to client-side calculation
+                    callback(calculateProcessingFees(amount, paymentMethod));
+                }
+                    })
+                    .catch(error => {
+                console.error('Error calculating processing fees:', error);
+                // Fallback to client-side calculation
+                callback(calculateProcessingFees(amount, paymentMethod));
+                    });
+        }
+        
+        // Update pricing summary for edit form
+        function updateEditPricingSummary(servicePrice, additionalCharges, processingFees, totalCost, remaining) {
+            // Update the pricing summary cards
+            const servicePriceElements = document.querySelectorAll('#editServicePriceDisplay');
+            const additionalChargesElements = document.querySelectorAll('#editAdditionalChargesDisplay');
+            const processingFeesElements = document.querySelectorAll('#editProcessingFeesDisplay');
+            const totalCostElements = document.querySelectorAll('#editTotalCostDisplay');
+            const remainingElements = document.querySelectorAll('#editRemainingDisplay');
+            
+            servicePriceElements.forEach(el => el.textContent = servicePrice.toFixed(2));
+            additionalChargesElements.forEach(el => el.textContent = additionalCharges.toFixed(2));
+            processingFeesElements.forEach(el => el.textContent = processingFees.toFixed(2));
+            totalCostElements.forEach(el => el.textContent = totalCost.toFixed(2));
+            remainingElements.forEach(el => el.textContent = remaining.toFixed(2));
+        }
+        
+        // Update pricing for edit booking form
+        function updateEditPricing() {
+            const serviceType = document.getElementById('editServiceType').value;
+            const additionalCharges = parseFloat(document.getElementById('editAdditionalCharges').value) || 0;
+            const paidAmount = parseFloat(document.getElementById('editPaidAmount').value) || 0;
+            const paymentMethod = document.getElementById('editPaymentMethod').value;
+            const paymentStatus = document.getElementById('editPaymentStatus').value;
+            
+            if (serviceType) {
+                // Fetch service pricing from backend using pricing strategies
+                fetch(`/staff/pricing/calculate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `serviceType=${encodeURIComponent(serviceType)}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                    if (data.success) {
+                        const servicePrice = parseFloat(data.basePrice);
+                        const additionalChargesFromStrategy = parseFloat(data.additionalCharges);
+                        const totalAdditionalCharges = additionalCharges + additionalChargesFromStrategy;
+                        
+                        // Calculate processing fees using backend
+                        if (paymentMethod && paymentMethod !== "CASH") {
+                            // Calculate processing fees based on service price, not paid amount
+                            const baseAmount = servicePrice + totalAdditionalCharges;
+                            calculateStaffProcessingFees(baseAmount, paymentMethod, (backendProcessingFees) => {
+                                updateEditPricingDisplay(servicePrice, totalAdditionalCharges, backendProcessingFees, paidAmount);
+                            });
+                        } else {
+                            // No processing fees for cash
+                            updateEditPricingDisplay(servicePrice, totalAdditionalCharges, 0, paidAmount);
+                        }
+                    } else {
+                        console.error('Error fetching service pricing:', data.error);
+                        // Fallback to client-side calculation
+                        const servicePrice = 8000; // Default fallback
+                        const baseAmount = servicePrice + additionalCharges;
+                        const processingFees = calculateProcessingFees(baseAmount, paymentMethod);
+                        updateEditPricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching service pricing:', error);
+                    // Fallback to client-side calculation
+                    const servicePrice = 8000; // Default fallback
+                    const baseAmount = servicePrice + additionalCharges;
+                    const processingFees = calculateProcessingFees(baseAmount, paymentMethod);
+                    updateEditPricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount);
+                });
+            }
+        }
+
+        // Helper function to update edit pricing display
+        function updateEditPricingDisplay(servicePrice, additionalCharges, processingFees, paidAmount) {
+            const totalCost = servicePrice + additionalCharges + processingFees;
+                        const remaining = Math.max(0, totalCost - paidAmount);
+                        
+                        // Update form fields
+                        document.getElementById('editServicePrice').value = servicePrice.toFixed(2);
+                        document.getElementById('editRemainingAmount').value = remaining.toFixed(2);
+                        
+                        // Update display
+                        document.getElementById('editServicePriceDisplay').textContent = servicePrice.toFixed(2);
+                        document.getElementById('editAdditionalChargesDisplay').textContent = additionalCharges.toFixed(2);
+            document.getElementById('editProcessingFeesDisplay').textContent = processingFees.toFixed(2);
+                        document.getElementById('editTotalCostDisplay').textContent = totalCost.toFixed(2);
+                        document.getElementById('editRemainingDisplay').textContent = remaining.toFixed(2);
+                        
+                        // Update pricing summary cards
+            updateEditPricingSummary(servicePrice, additionalCharges, processingFees, totalCost, remaining);
+        }
+
+        // Enhanced form validation and submission
+        function validateCreateBookingForm() {
+            const customerName = document.querySelector('select[name="customerName"]').value;
+            const vehicleNumber = document.querySelector('input[name="vehicleNumber"]').value;
+            const serviceType = document.querySelector('select[name="serviceType"]').value;
+            const bookingDate = document.getElementById('createBookingDate').value;
+            const timeSlot = document.getElementById('createTimeSlot').value;
+            const servicePrice = document.querySelector('input[name="servicePrice"]').value;
+            
+            if (!customerName) {
+                alert('Please select a customer.');
+                return false;
+            }
+            if (!vehicleNumber.trim()) {
+                alert('Please enter a vehicle number.');
+                return false;
+            }
+            if (!serviceType) {
+                alert('Please select a service type.');
+                return false;
+            }
+            if (!bookingDate) {
+                alert('Please select a booking date.');
+                return false;
+            }
+            if (!timeSlot) {
+                alert('Please select a time slot.');
+                return false;
+            }
+            if (!servicePrice || parseFloat(servicePrice) <= 0) {
+                alert('Please enter a valid service price.');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Update form submission to include selected slot
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set minimum date to 2 days from today for receptionist booking
+            const createBookingDateInput = document.getElementById('createBookingDate');
+            if (createBookingDateInput) {
+                const today = new Date();
+                const minDate = new Date(today);
+                minDate.setDate(today.getDate() + 2); // 2 days from today
+                
+                const minDateString = minDate.toISOString().split('T')[0];
+                createBookingDateInput.min = minDateString;
+                createBookingDateInput.setAttribute('min', minDateString);
+                
+                // Add validation for date selection
+                createBookingDateInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    const twoDaysFromNow = new Date(today);
+                    twoDaysFromNow.setDate(today.getDate() + 2);
+                    
+                    // Set time to start of day for accurate comparison
+                    twoDaysFromNow.setHours(0, 0, 0, 0);
+                    selectedDate.setHours(0, 0, 0, 0);
+                    
+                    if (selectedDate < twoDaysFromNow) {
+                        alert('Please select a date at least 2 days in advance (if today is ' + today.getDate() + ', you can only select from ' + twoDaysFromNow.getDate() + ' onwards).');
+                        this.value = '';
+                        return;
+                    }
+                });
+            }
+
+            const createForm = document.querySelector('form[action="/staff/bookings"]');
+            if (createForm) {
+                createForm.addEventListener('submit', function(e) {
+                    if (!validateCreateBookingForm()) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    const timeSlotSelect = document.getElementById('createTimeSlot');
+                    const dateInput = document.getElementById('createBookingDate');
+                    
+                    if (!timeSlotSelect.value || !dateInput.value) {
+                        e.preventDefault();
+                        alert('Please select both a date and time slot for the booking.');
+                        return false;
+                    }
+                    
+                    // Validate date is at least 2 days in advance
+                    const selectedDate = new Date(dateInput.value);
+                    const today = new Date();
+                    const twoDaysFromNow = new Date(today);
+                    twoDaysFromNow.setDate(today.getDate() + 2);
+                    
+                    // Set time to start of day for accurate comparison
+                    twoDaysFromNow.setHours(0, 0, 0, 0);
+                    selectedDate.setHours(0, 0, 0, 0);
+                    
+                    if (selectedDate < twoDaysFromNow) {
+                        e.preventDefault();
+                        alert('Please select a date at least 2 days in advance (if today is ' + today.getDate() + ', you can only select from ' + twoDaysFromNow.getDate() + ' onwards).');
+                        return false;
+                    }
+                    
+                    // Create datetime string for form submission
+                    const datetimeString = `${dateInput.value}T${timeSlotSelect.value}`;
+                    
+                    // Add hidden input for booking date
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'bookingDate';
+                    hiddenInput.value = datetimeString;
+                    this.appendChild(hiddenInput);
+                });
+            }
+            
+            // Add event listener for date change in create form
+            const createDateInput = document.getElementById('createBookingDate');
+            if (createDateInput) {
+                createDateInput.addEventListener('change', function() {
+                    console.log('Date changed to:', this.value);
+                    if (this.value) {
+                        loadAvailableSlotsForCreate();
+                    }
+                });
+            }
+            
+            // Add event listener for service type change in create form
+            const createServiceTypeSelect = document.getElementById('createServiceType');
+            if (createServiceTypeSelect) {
+                createServiceTypeSelect.addEventListener('change', function() {
+                    const dateInput = document.getElementById('createBookingDate');
+                    if (dateInput.value) {
+                        loadAvailableSlotsForCreate();
+                    }
+                    // Update pricing when service type changes
+                    updateCreatePricing();
+                });
+            }
+
+            // Update edit form submission to include selected slot
+            const editForm = document.getElementById('editBookingForm');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    // Validate edit form
+                    const customerName = document.getElementById('editCustomerName').value;
+                    const vehicleNumber = document.getElementById('editVehicleNumber').value;
+                    const serviceType = document.getElementById('editServiceType').value;
+                    const bookingDate = document.getElementById('editBookingDate').value;
+                    const timeSlot = document.getElementById('editTimeSlot').value;
+                    const servicePrice = document.getElementById('editServicePrice').value;
+                    
+                    // Combine date and time slot into LocalDateTime format
+                    if (timeSlot && bookingDate) {
+                        const combinedDateTime = bookingDate + 'T' + timeSlot + ':00';
+                        document.getElementById('editTimeSlotHidden').value = combinedDateTime;
+                    }
+                    
+                    if (!customerName) {
+                        e.preventDefault();
+                        alert('Please select a customer.');
+                        return false;
+                    }
+                    if (!vehicleNumber.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a vehicle number.');
+                        return false;
+                    }
+                    if (!serviceType) {
+                        e.preventDefault();
+                        alert('Please select a service type.');
+                        return false;
+                    }
+                    if (!bookingDate) {
+                        e.preventDefault();
+                        alert('Please select a booking date.');
+                        return false;
+                    }
+                    if (!timeSlot) {
+                        e.preventDefault();
+                        alert('Please select a time slot.');
+                        return false;
+                    }
+                    if (!servicePrice || parseFloat(servicePrice) <= 0) {
+                        e.preventDefault();
+                        alert('Please enter a valid service price.');
+                        return false;
+                    }
+                    
+                    // Validate date is at least 2 days in advance
+                    const selectedDate = new Date(bookingDate);
+                    const today = new Date();
+                    const twoDaysFromNow = new Date(today);
+                    twoDaysFromNow.setDate(today.getDate() + 2);
+                    
+                    // Set time to start of day for accurate comparison
+                    twoDaysFromNow.setHours(0, 0, 0, 0);
+                    selectedDate.setHours(0, 0, 0, 0);
+                    
+                    if (selectedDate < twoDaysFromNow) {
+                        e.preventDefault();
+                        alert('Please select a date at least 2 days in advance (if today is ' + today.getDate() + ', you can only select from ' + twoDaysFromNow.getDate() + ' onwards).');
+                        return false;
+                    }
+                    
+                    // Create datetime string for form submission
+                    const datetimeString = `${bookingDate}T${timeSlot}`;
+                    
+                    // Add hidden input for booking date
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'bookingDate';
+                    hiddenInput.value = datetimeString;
+                    this.appendChild(hiddenInput);
+                });
+            }
+            
+            // Add event listener for date change in edit form
+            const editDateInput = document.getElementById('editBookingDate');
+            if (editDateInput) {
+                // Set minimum date to 2 days from today for edit booking
+                const today = new Date();
+                const minDate = new Date(today);
+                minDate.setDate(today.getDate() + 2); // 2 days from today
+                
+                const minDateString = minDate.toISOString().split('T')[0];
+                editDateInput.min = minDateString;
+                editDateInput.setAttribute('min', minDateString);
+                
+                editDateInput.addEventListener('change', function() {
+                    console.log('Edit date changed to:', this.value);
+                    
+                    // Validate date is at least 2 days in advance
+                    if (this.value) {
+                        const selectedDate = new Date(this.value);
+                        const today = new Date();
+                        const twoDaysFromNow = new Date(today);
+                        twoDaysFromNow.setDate(today.getDate() + 2);
+                        
+                        // Set time to start of day for accurate comparison
+                        twoDaysFromNow.setHours(0, 0, 0, 0);
+                        selectedDate.setHours(0, 0, 0, 0);
+                        
+                        if (selectedDate < twoDaysFromNow) {
+                            alert('Please select a date at least 2 days in advance (if today is ' + today.getDate() + ', you can only select from ' + twoDaysFromNow.getDate() + ' onwards).');
+                            this.value = '';
+                            return;
+                        }
+                        
+                        loadAvailableSlotsForEdit();
+                    }
+                });
+            }
+            
+            // Add event listener for service type change in edit form
+            const editServiceTypeSelect = document.getElementById('editServiceType');
+            if (editServiceTypeSelect) {
+                editServiceTypeSelect.addEventListener('change', function() {
+                    const dateInput = document.getElementById('editBookingDate');
+                    if (dateInput.value) {
+                        loadAvailableSlotsForEdit();
+                    }
+                    // Update pricing when service type changes
+                    updateEditPricing();
+                });
+            }
+            
+            // Add customer form validation
+            const customerForm = document.querySelector('form[action="/staff/receptionist/customers/create"]');
+            if (customerForm) {
+                customerForm.addEventListener('submit', function(e) {
+                    const firstName = document.querySelector('input[name="firstName"]').value;
+                    const lastName = document.querySelector('input[name="lastName"]').value;
+                    const username = document.querySelector('input[name="username"]').value;
+                    const email = document.querySelector('input[name="email"]').value;
+                    const password = document.querySelector('input[name="password"]').value;
+                    
+                    if (!firstName.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a first name.');
+                        return false;
+                    }
+                    if (!lastName.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a last name.');
+                        return false;
+                    }
+                    if (!username.trim()) {
+                        e.preventDefault();
+                        alert('Please enter a username.');
+                        return false;
+                    }
+                    if (!email.trim() || !email.includes('@')) {
+                        e.preventDefault();
+                        alert('Please enter a valid email address.');
+                        return false;
+                    }
+                    if (!password.trim() || password.length < 6) {
+                        e.preventDefault();
+                        alert('Please enter a password with at least 6 characters.');
+                        return false;
+                    }
+                });
+            }
+        });
+
+        // Form Validation Functions
+        function validateForm(form) {
+            const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+            let isValid = true;
+            let firstInvalidField = null;
+
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                    if (!firstInvalidField) {
+                        firstInvalidField = input;
+                    }
+                }
+            });
+
+            if (!isValid && firstInvalidField) {
+                firstInvalidField.focus();
+                firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            return isValid;
+        }
+
+        function validateField(field) {
+            const value = field.value.trim();
+            const type = field.type;
+            const pattern = field.pattern;
+            const minLength = field.minLength;
+            const maxLength = field.maxLength;
+            const min = field.min;
+            const max = field.max;
+
+            // Remove previous validation classes
+            field.classList.remove('is-valid', 'is-invalid');
+            
+            // Check required fields
+            if (field.hasAttribute('required') && !value) {
+                showFieldError(field, 'This field is required');
+                return false;
+            }
+
+            // Skip validation for empty optional fields
+            if (!field.hasAttribute('required') && !value) {
+                return true;
+            }
+
+            // Validate by type
+            switch (type) {
+                case 'email':
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(value)) {
+                        showFieldError(field, 'Please enter a valid email address');
+                        return false;
+                    }
+                    break;
+
+                case 'tel':
+                    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{7,20}$/;
+                    if (!phoneRegex.test(value)) {
+                        showFieldError(field, 'Please enter a valid phone number');
+                        return false;
+                    }
+                    break;
+
+                case 'text':
+                    // Special validation for vehicle number
+                    if (field.name === 'vehicleNumber') {
+                        const vehicleRegex = /^[A-Za-z]{3}-[0-9]{4}$/;
+                        if (!vehicleRegex.test(value)) {
+                            showFieldError(field, 'Please enter vehicle number in format ABC-1234 (3 letters, hyphen, 4 numbers)');
+                            return false;
+                        }
+                    }
+                    break;
+
+                case 'number':
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue) || numValue < 0) {
+                        showFieldError(field, 'Please enter a valid positive number');
+                        return false;
+                    }
+                    if (min && numValue < parseFloat(min)) {
+                        showFieldError(field, `Value must be at least ${min}`);
+                        return false;
+                    }
+                    if (max && numValue > parseFloat(max)) {
+                        showFieldError(field, `Value must not exceed ${max}`);
+                        return false;
+                    }
+                    break;
+
+                case 'date':
+                    const dateValue = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+                    
+                    if (dateValue < today) {
+                        showFieldError(field, 'Cannot select a past date. Please choose today or a future date.');
+                        return false;
+                    }
+                    if (min && dateValue < new Date(min)) {
+                        showFieldError(field, `Date must be after ${min}`);
+                        return false;
+                    }
+                    if (max && dateValue > new Date(max)) {
+                        showFieldError(field, `Date must be before ${max}`);
+                        return false;
+                    }
+                    break;
+            }
+
+            // Validate length
+            if (minLength && minLength > 0 && value.length < minLength) {
+                showFieldError(field, `Must be at least ${minLength} characters`);
+                return false;
+            }
+            if (maxLength && maxLength > 0 && value.length > maxLength) {
+                showFieldError(field, `Must not exceed ${maxLength} characters`);
+                return false;
+            }
+
+            // Validate pattern
+            if (pattern) {
+                const regex = new RegExp(pattern);
+                if (!regex.test(value)) {
+                    showFieldError(field, field.title || 'Please enter a valid value');
+                    return false;
+                }
+            }
+
+            // Show success state
+            showFieldSuccess(field);
+            return true;
+        }
+
+        function showFieldError(field, message) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            
+            // Remove existing error message
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Add new error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            field.parentNode.appendChild(errorDiv);
+        }
+
+        function showFieldSuccess(field) {
+            field.classList.add('is-valid');
+            field.classList.remove('is-invalid');
+            
+            // Remove error message
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById('passwordField');
+            const toggleIcon = document.getElementById('passwordToggleIcon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.className = 'fas fa-eye';
+            }
+        }
+
+        // Add real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set minimum date to today for all date inputs
+            const today = new Date().toISOString().split('T')[0];
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                input.setAttribute('min', today);
+            });
+
+            // Add validation to all forms
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                // Add submit validation
+                form.addEventListener('submit', function(e) {
+                    if (!validateForm(this)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+
+                // Add real-time validation to inputs
+                const inputs = form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+
+                    input.addEventListener('input', function() {
+                        // Clear validation state on input
+                        this.classList.remove('is-valid', 'is-invalid');
+                        const errorDiv = this.parentNode.querySelector('.invalid-feedback');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                    });
+                });
+            });
+        });
+
+        // =================== BOOKING SEARCH AND FILTER FUNCTIONS ===================
+        
+        // Client-side filtering functions (matching inventory dashboard style)
+        function filterBookings() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const serviceTypeFilter = document.getElementById('serviceTypeFilter').value;
+            const dateFromFilter = document.getElementById('dateFromFilter').value;
+            const dateToFilter = document.getElementById('dateToFilter').value;
+            
+            const rows = document.querySelectorAll('.booking-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                // Search filter
+                if (searchTerm) {
+                    const customerName = row.getAttribute('data-customer-name')?.toLowerCase() || '';
+                    const vehicleNumber = row.getAttribute('data-vehicle-number')?.toLowerCase() || '';
+                    const serviceType = row.getAttribute('data-service-type')?.toLowerCase() || '';
+                    const bookingNumber = row.getAttribute('data-booking-number')?.toLowerCase() || '';
+                    
+                    if (!customerName.includes(searchTerm) && 
+                        !vehicleNumber.includes(searchTerm) && 
+                        !serviceType.includes(searchTerm) && 
+                        !bookingNumber.includes(searchTerm)) {
+                        showRow = false;
+                    }
+                }
+                
+                // Status filter
+                if (showRow && statusFilter) {
+                    const paymentStatus = row.getAttribute('data-payment-status');
+                    if (paymentStatus !== statusFilter) {
+                        showRow = false;
+                    }
+                }
+                
+                // Service type filter
+                if (showRow && serviceTypeFilter) {
+                    const serviceType = row.getAttribute('data-service-type');
+                    if (serviceType !== serviceTypeFilter) {
+                        showRow = false;
+                    }
+                }
+                
+                // Date range filter
+                if (showRow && (dateFromFilter || dateToFilter)) {
+                    const bookingDate = row.getAttribute('data-booking-date');
+                    if (bookingDate) {
+                        // From date filter
+                        if (dateFromFilter && bookingDate < dateFromFilter) {
+                            showRow = false;
+                        }
+                        // To date filter
+                        if (showRow && dateToFilter && bookingDate > dateToFilter) {
+                            showRow = false;
+                        }
+                    } else {
+                        // If no booking date and filters are applied, hide the row
+                        showRow = false;
+                    }
+                }
+                
+                if (showRow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update filter info
+            updateFilterInfo(visibleCount, rows.length);
+        }
+        
+        function updateFilterInfo(visibleCount, totalCount) {
+            const filterInfo = document.getElementById('filterInfo');
+            const filterText = document.getElementById('filterText');
+            
+            if (visibleCount < totalCount) {
+                filterText.textContent = `Showing ${visibleCount} of ${totalCount} bookings`;
+                filterInfo.style.display = 'flex';
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        }
+        
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('serviceTypeFilter').value = '';
+            document.getElementById('dateFromFilter').value = '';
+            document.getElementById('dateToFilter').value = '';
+            filterBookings();
+        }
+
+        // Refresh bookings data
+        function refreshBookings() {
+            const refreshBtn = event.target.closest('button');
+            const originalContent = refreshBtn.innerHTML;
+            
+            // Show loading state
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            refreshBtn.disabled = true;
+            
+            // Reload the page
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // Initialize filter functionality
+        function initializeFilters() {
+            // Set default date range (last 30 days) - but allow any date selection
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            const dateFromInput = document.getElementById('dateFromFilter');
+            const dateToInput = document.getElementById('dateToFilter');
+            
+            // Set default value but don't restrict date selection
+            if (dateFromInput && !dateFromInput.value) {
+                dateFromInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+            }
+            if (dateToInput && !dateToInput.value) {
+                dateToInput.value = today.toISOString().split('T')[0];
+            }
+            
+            // Remove any min/max date restrictions to allow selecting any date
+            if (dateFromInput) {
+                dateFromInput.removeAttribute('min');
+                dateFromInput.removeAttribute('max');
+            }
+            if (dateToInput) {
+                dateToInput.removeAttribute('min');
+                dateToInput.removeAttribute('max');
+            }
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+F to focus search
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.select();
+                    }
+                }
+                
+                // Escape to clear filters
+                if (e.key === 'Escape') {
+                    clearFilters();
+                }
+            });
+        }
+
+        // Call initialization when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFilters();
+            
+            // Add event listener for the confirm delete button
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBooking');
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', function() {
+                    confirmDeleteBooking();
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

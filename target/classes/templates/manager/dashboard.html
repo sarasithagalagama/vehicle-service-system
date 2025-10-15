@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<!-- Manager dashboard template for business oversight and team management -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <!-- Meta tags for responsive design and character encoding -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manager Dashboard - Vehicle Service System</title>
+    <!-- External CSS libraries with fallback for offline support -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      onerror="this.onerror=null;this.href='data:text/css,';"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+      onerror="this.onerror=null;this.href='data:text/css,';"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+      onerror="this.onerror=null;this.href='data:text/css,';"
+    />
+    <link href="/css/dashboard.css" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <a href="/manager/dashboard" class="sidebar-brand">
+          <i class="fas fa-car"></i>
+          Vehicle Service
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item">
+          <a class="nav-link active" href="/manager/dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            Dashboard
+          </a>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" href="/manager/feedbacks">
+            <i class="fas fa-comments"></i>
+            Feedback
+          </a>
+        </div>
+        <div class="nav-item">
+          <a class="nav-link" th:href="@{/logout}">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="content-area">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="page-title">Manager Dashboard</h1>
+              <p class="page-subtitle">
+                Manage technician assignments and workload distribution
+              </p>
+            </div>
+            <div class="user-profile">
+              <div
+                class="avatar"
+                th:text="${user.firstName.substring(0,1) + user.lastName.substring(0,1)}"
+              >
+                M
+              </div>
+              <div>
+                <div
+                  class="fw-semibold"
+                  th:text="${user.firstName + ' ' + user.lastName}"
+                >
+                  Manager User
+                </div>
+                <small class="text-muted">Assignment Manager</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div
+          th:if="${message}"
+          class="alert alert-success alert-dismissible fade show"
+          role="alert"
+        >
+          <i class="fas fa-check-circle me-2"></i>
+          <span th:text="${message}"></span>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            title="Close alert"
+            aria-label="Close alert"
+          ></button>
+        </div>
+
+        <div
+          th:if="${error}"
+          class="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <span th:text="${error}"></span>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            title="Close alert"
+            aria-label="Close alert"
+          ></button>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon primary">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-number" th:text="${totalBookings}">0</div>
+            <div class="stat-label">Total Bookings</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <i class="fas fa-user-times"></i>
+            </div>
+            <div class="stat-number" th:text="${unassignedBookings}">0</div>
+            <div class="stat-label">Unassigned</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon info">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-number" th:text="${activeAssignments}">0</div>
+            <div class="stat-label">Active Assignments</div>
+          </div>
+        </div>
+
+        <!-- Unassigned Bookings Table -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-user-times me-2"></i>
+                Unassigned Bookings
+              </h5>
+              <button
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#assignmentModal"
+                th:if="${!#lists.isEmpty(unassignedBookingsList)}"
+              >
+                <i class="fas fa-user-plus me-2"></i>
+                Assign Technicians
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div
+              th:if="${#lists.isEmpty(unassignedBookingsList)}"
+              class="text-center p-4"
+            >
+              <div class="empty-state">
+                <i class="fas fa-user-times fa-2x"></i>
+                <h5>No unassigned bookings</h5>
+                <p>
+                  No unassigned bookings found. All bookings have been assigned
+                  to technicians.
+                </p>
+              </div>
+            </div>
+
+            <div
+              th:if="${!#lists.isEmpty(unassignedBookingsList)}"
+              class="table-responsive"
+            >
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>BOOKING</th>
+                    <th>CUSTOMER</th>
+                    <th>VEHICLE</th>
+                    <th>SERVICE TYPE</th>
+                    <th>DATE</th>
+                    <th>STATUS</th>
+                    <th>TOTAL PRICE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="booking : ${unassignedBookingsList}">
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div
+                          class="avatar me-2 manager-avatar-booking"
+                          th:text="${booking.bookingNumber.substring(2,4)}"
+                        >
+                          BK
+                        </div>
+                        <div>
+                          <div
+                            class="fw-semibold"
+                            th:text="${booking.bookingNumber}"
+                          >
+                            BK001
+                          </div>
+                          <small class="text-muted">Unassigned</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${booking.customerName}">John Doe</td>
+                    <td>
+                      <div>
+                        <div
+                          class="fw-semibold"
+                          th:text="${booking.vehicleNumber}"
+                        >
+                          ABC-1234
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${booking.serviceType}">Oil Change</td>
+                    <td
+                      th:text="${#temporals.format(booking.bookingDate, 'yyyy-MM-dd HH:mm')}"
+                    >
+                      2024-01-01 10:00
+                    </td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        th:classappend="${booking.paymentStatus.name() == 'PAID'} ? 'status-confirmed' : (${booking.paymentStatus.name() == 'PARTIAL'} ? 'status-warning' : (${booking.paymentStatus.name() == 'REFUNDED'} ? 'status-cancelled' : 'status-pending'))"
+                        th:text="${booking.paymentStatus}"
+                        >Pending</span
+                      >
+                    </td>
+                    <td
+                      th:text="'Rs. ' + ${#numbers.formatDecimal(booking.totalPrice, 1, 2)}"
+                    >
+                      Rs. 50.00
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assigned Bookings Table -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-user-check me-2"></i>
+                Assigned Bookings
+              </h5>
+              <div class="d-flex gap-2">
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  onclick="refreshAssignedBookings()"
+                  title="Refresh Bookings"
+                >
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search and Filter -->
+          <div class="row mb-3 manager-search-filter">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="assignedSearchInput"
+                  placeholder="Search bookings..."
+                  onkeyup="filterAssignedBookings()"
+                  oninput="filterAssignedBookings()"
+                />
+              </div>
+            </div>
+            <div class="col-md-2">
+              <select
+                class="form-select"
+                id="assignedStatusFilter"
+                onchange="filterAssignedBookings()"
+                aria-label="Filter by status"
+              >
+                <option value="">All Status</option>
+                <option value="ASSIGNED">Assigned</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select
+                class="form-select"
+                id="assignedServiceFilter"
+                onchange="filterAssignedBookings()"
+                aria-label="Filter by service type"
+              >
+                <option value="">All Services</option>
+                <option value="Oil Change">Oil Change</option>
+                <option value="Brake Service">Brake Service</option>
+                <option value="Engine Inspection">Engine Inspection</option>
+                <option value="Transmission Service">
+                  Transmission Service
+                </option>
+                <option value="Tire Service">Tire Service</option>
+                <option value="AC Service">AC Service</option>
+                <option value="Electrical Service">Electrical Service</option>
+                <option value="General Maintenance">General Maintenance</option>
+                <option value="Safety Inspection">Safety Inspection</option>
+                <option value="Emissions Test">Emissions Test</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select
+                class="form-select"
+                id="assignedTechnicianFilter"
+                onchange="filterAssignedBookings()"
+                aria-label="Filter by technician"
+              >
+                <option value="">All Technicians</option>
+                <option
+                  th:each="technician : ${technicians}"
+                  th:value="${technician.fullName}"
+                  th:text="${technician.fullName}"
+                >
+                  Technician Name
+                </option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button
+                type="button"
+                class="btn btn-outline-danger w-100 manager-clear-btn"
+                onclick="clearAssignedFilters()"
+              >
+                <i class="fas fa-times"></i> Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Results Info -->
+          <div class="row mb-3 manager-filter-info">
+            <div class="col-12">
+              <div
+                class="alert alert-info d-flex align-items-center manager-filter-alert"
+                id="assignedFilterInfo"
+                role="alert"
+              >
+                <i class="fas fa-info-circle me-2"></i>
+                <span id="assignedFilterText">Showing filtered results</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>BOOKING</th>
+                    <th>CUSTOMER</th>
+                    <th>VEHICLE</th>
+                    <th>SERVICE TYPE</th>
+                    <th>DATE</th>
+                    <th>TECHNICIAN</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    th:each="booking : ${assignedBookingsList}"
+                    class="assigned-booking-row"
+                    th:data-booking-number="${booking.bookingNumber}"
+                    th:data-customer-name="${booking.customerName}"
+                    th:data-vehicle-number="${booking.vehicleNumber}"
+                    th:data-service-type="${booking.serviceType}"
+                    th:data-technician-name="${bookingTechnicianMap.get(booking.id) != null ? bookingTechnicianMap.get(booking.id) : 'N/A'}"
+                    th:data-assignment-status="${bookingAssignmentMap.get(booking.id)?.status ?: 'N/A'}"
+                    th:data-payment-status="${booking.paymentStatus}"
+                  >
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div
+                          class="avatar me-2 manager-avatar-assigned"
+                          th:text="${booking.bookingNumber.substring(2,4)}"
+                        >
+                          BK
+                        </div>
+                        <div>
+                          <div
+                            class="fw-semibold"
+                            th:text="${booking.bookingNumber}"
+                          >
+                            BK001
+                          </div>
+                          <small class="text-muted">Assigned</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${booking.customerName}">John Doe</td>
+                    <td>
+                      <div>
+                        <div
+                          class="fw-semibold"
+                          th:text="${booking.vehicleNumber}"
+                        >
+                          ABC-1234
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${booking.serviceType}">Oil Change</td>
+                    <td
+                      th:text="${#temporals.format(booking.bookingDate, 'yyyy-MM-dd HH:mm')}"
+                    >
+                      2024-01-01 10:00
+                    </td>
+                    <td
+                      th:text="${bookingTechnicianMap.get(booking.id) != null ? bookingTechnicianMap.get(booking.id) : 'N/A'}"
+                    >
+                      Technician Name
+                    </td>
+                    <td>
+                      <div class="mb-1">
+                        <small class="text-muted">Payment:</small>
+                        <span
+                          class="status-badge"
+                          th:classappend="${booking.paymentStatus.name() == 'PAID'} ? 'status-confirmed' : (${booking.paymentStatus.name() == 'PARTIAL'} ? 'status-warning' : (${booking.paymentStatus.name() == 'REFUNDED'} ? 'status-cancelled' : 'status-pending'))"
+                          th:text="${booking.paymentStatus}"
+                          >Pending</span
+                        >
+                      </div>
+                      <div>
+                        <small class="text-muted">Assignment:</small>
+                        <span
+                          class="status-badge"
+                          th:classappend="${bookingAssignmentMap.get(booking.id).status.name() == 'COMPLETED'} ? 'status-confirmed' : (${bookingAssignmentMap.get(booking.id).status.name() == 'IN_PROGRESS'} ? 'status-info' : (${bookingAssignmentMap.get(booking.id).status.name() == 'CANCELLED'} ? 'status-cancelled' : 'status-pending'))"
+                          th:text="${bookingAssignmentMap.get(booking.id).status}"
+                          >ASSIGNED</span
+                        >
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        class="btn-action btn-info view-assignment-btn"
+                        th:data-assignment-id="${bookingAssignmentMap.get(booking.id)?.id ?: 'N/A'}"
+                        th:data-booking-id="${booking.id}"
+                        th:data-booking-number="${booking.bookingNumber}"
+                        th:data-customer-name="${booking.customerName}"
+                        th:data-vehicle-number="${booking.vehicleNumber}"
+                        th:data-service-type="${booking.serviceType}"
+                        th:data-technician-id="${bookingAssignmentMap.get(booking.id)?.technician?.id ?: 'N/A'}"
+                        th:data-technician-name="${bookingTechnicianMap.get(booking.id)}"
+                        th:data-assigned-by-id="${bookingAssignmentMap.get(booking.id)?.assignedBy?.id ?: 'N/A'}"
+                        th:data-assigned-by-name="${bookingAssignmentMap.get(booking.id)?.assignedBy != null ? bookingAssignmentMap.get(booking.id).assignedBy.fullName : 'N/A'}"
+                        th:data-assignment-date="${bookingAssignmentMap.get(booking.id)?.assignmentDate != null ? #temporals.format(bookingAssignmentMap.get(booking.id).assignmentDate, 'yyyy-MM-dd') : 'N/A'}"
+                        th:data-assignment-time="${bookingAssignmentMap.get(booking.id)?.assignmentDate != null ? #temporals.format(bookingAssignmentMap.get(booking.id).assignmentDate, 'HH:mm') : 'N/A'}"
+                        th:data-status="${bookingAssignmentMap.get(booking.id)?.status ?: 'N/A'}"
+                        th:data-notes="${bookingAssignmentMap.get(booking.id)?.notes ?: 'N/A'}"
+                        th:data-booking-date="${#temporals.format(booking.bookingDate, 'yyyy-MM-dd HH:mm')}"
+                        th:data-payment-status="${booking.paymentStatus}"
+                        th:if="${bookingTechnicianMap.containsKey(booking.id)}"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn-action btn-primary edit-assignment-btn"
+                        th:data-assignment-id="${bookingAssignmentMap.get(booking.id)?.id ?: 'N/A'}"
+                        th:data-booking-id="${booking.id}"
+                        th:data-booking-number="${booking.bookingNumber}"
+                        th:data-customer-name="${booking.customerName}"
+                        th:data-vehicle-number="${booking.vehicleNumber}"
+                        th:data-service-type="${booking.serviceType}"
+                        th:data-technician-id="${bookingAssignmentMap.get(booking.id)?.technician?.id ?: 'N/A'}"
+                        th:data-assigned-by-id="${bookingAssignmentMap.get(booking.id)?.assignedBy?.id ?: 'N/A'}"
+                        th:data-assignment-date="${bookingAssignmentMap.get(booking.id)?.assignmentDate != null ? #temporals.format(bookingAssignmentMap.get(booking.id).assignmentDate, 'yyyy-MM-dd') : 'N/A'}"
+                        th:data-assignment-time="${bookingAssignmentMap.get(booking.id)?.assignmentDate != null ? #temporals.format(bookingAssignmentMap.get(booking.id).assignmentDate, 'HH:mm') : 'N/A'}"
+                        th:data-status="${bookingAssignmentMap.get(booking.id)?.status ?: 'N/A'}"
+                        th:data-notes="${bookingAssignmentMap.get(booking.id)?.notes ?: 'N/A'}"
+                        th:if="${bookingTechnicianMap.containsKey(booking.id)}"
+                        title="Edit Assignment"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn-action btn-danger delete-assignment-btn"
+                        th:data-assignment-id="${bookingAssignmentMap.get(booking.id)?.id ?: 'N/A'}"
+                        th:data-booking-id="${booking.id}"
+                        th:data-booking-number="${booking.bookingNumber}"
+                        th:data-technician-name="${bookingTechnicianMap.get(booking.id) != null ? bookingTechnicianMap.get(booking.id) : 'N/A'}"
+                        th:if="${bookingTechnicianMap.containsKey(booking.id)}"
+                        title="Delete Assignment"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr th:if="${#lists.isEmpty(assignedBookingsList)}">
+                    <td colspan="8" class="text-center">
+                      <div class="empty-state">
+                        <i class="fas fa-user-check fa-2x"></i>
+                        <h5>No assigned bookings</h5>
+                        <p>
+                          No assigned bookings found. Assign technicians to
+                          bookings to see them here.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Technician Workload Overview -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-users me-2"></i>
+                Technician Workload Overview
+              </h5>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>TECHNICIAN</th>
+                    <th>EMPLOYEE ID</th>
+                    <th>SPECIALIZATION</th>
+                    <th>CURRENT WORKLOAD</th>
+                    <th>MAX CAPACITY</th>
+                    <th>REMAINING CAPACITY</th>
+                    <th>HOURLY RATE</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="tech : ${technicians}">
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div
+                          class="avatar me-2 manager-avatar-technician"
+                          th:text="${tech.fullName.substring(0,2).toUpperCase()}"
+                        >
+                          JD
+                        </div>
+                        <div>
+                          <div class="fw-semibold" th:text="${tech.fullName}">
+                            John Doe
+                          </div>
+                          <small class="text-muted" th:text="${tech.employeeId}"
+                            >EMP001</small
+                          >
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${tech.employeeId}">EMP001</td>
+                    <td th:text="${tech.specialization}">Engine Repair</td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        th:classappend="${tech.currentWorkload >= tech.maxDailyWorkload} ? 'status-cancelled' : (${tech.currentWorkload >= tech.maxDailyWorkload * 0.8} ? 'status-pending' : 'status-confirmed')"
+                        th:text="${tech.currentWorkload} + '/' + ${tech.maxDailyWorkload}"
+                        >3/6</span
+                      >
+                    </td>
+                    <td th:text="${tech.maxDailyWorkload}">6</td>
+                    <td th:text="${tech.remainingCapacity}">3</td>
+                    <td
+                      th:text="${tech.hourlyRate != null ? 'Rs. ' + #numbers.formatDecimal(tech.hourlyRate, 1, 2) : 'N/A'}"
+                    >
+                      Rs. 25.00
+                    </td>
+                    <td>
+                      <span
+                        class="status-badge"
+                        th:classappend="${tech.canTakeMoreWork} ? 'status-confirmed' : 'status-cancelled'"
+                        th:text="${tech.canTakeMoreWork} ? 'Available' : 'At Capacity'"
+                        >Available</span
+                      >
+                    </td>
+                    <td>
+                      <button
+                        class="btn-action btn-info view-technician-btn"
+                        th:data-technician-id="${tech.id}"
+                        th:data-user-id="${tech.userId}"
+                        th:data-employee-id="${tech.employeeId}"
+                        th:data-specialization="${tech.specialization}"
+                        th:data-max-workload="${tech.maxDailyWorkload}"
+                        th:data-hourly-rate="${tech.hourlyRate}"
+                        th:data-experience="${tech.experienceYears}"
+                        th:data-current-workload="${tech.currentWorkload}"
+                        th:data-first-name="${tech.user != null ? tech.user.firstName : ''}"
+                        th:data-last-name="${tech.user != null ? tech.user.lastName : ''}"
+                        th:data-email="${tech.user != null ? tech.user.email : ''}"
+                        th:data-phone="${tech.user != null ? tech.user.phoneNumber : ''}"
+                        th:data-created-at="${#temporals.format(tech.createdAt, 'yyyy-MM-dd HH:mm')}"
+                        th:data-remaining-capacity="${tech.remainingCapacity}"
+                        title="View Technician Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn-action btn-primary edit-technician-btn"
+                        th:data-technician-id="${tech.id}"
+                        th:data-user-id="${tech.userId}"
+                        th:data-employee-id="${tech.employeeId}"
+                        th:data-specialization="${tech.specialization}"
+                        th:data-max-workload="${tech.maxDailyWorkload}"
+                        th:data-hourly-rate="${tech.hourlyRate}"
+                        th:data-experience="${tech.experienceYears}"
+                        th:data-current-workload="${tech.currentWorkload}"
+                        th:data-first-name="${tech.user != null ? tech.user.firstName : ''}"
+                        th:data-last-name="${tech.user != null ? tech.user.lastName : ''}"
+                        title="Edit Technician"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr th:if="${#lists.isEmpty(technicians)}">
+                    <td colspan="9" class="text-center">
+                      <div class="empty-state">
+                        <i class="fas fa-users fa-2x"></i>
+                        <h5>No technicians found</h5>
+                        <p>
+                          No technicians are currently registered in the system.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Workload -->
+        <div
+          class="card mb-3"
+          th:if="${todayWorkloads != null and !todayWorkloads.isEmpty()}"
+        >
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-chart-bar me-2"></i>
+                Today's Workload Distribution
+              </h5>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>TECHNICIAN</th>
+                    <th>SCHEDULED</th>
+                    <th>COMPLETED</th>
+                    <th>CANCELLED</th>
+                    <th>HOURS WORKED</th>
+                    <th>EFFICIENCY</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="workload : ${todayWorkloads}">
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div
+                          class="avatar me-2 manager-avatar-workload"
+                          th:text="${workload.technician != null ? workload.technician.fullName.substring(0,2).toUpperCase() : 'N/A'}"
+                        >
+                          JS
+                        </div>
+                        <div>
+                          <div
+                            class="fw-semibold"
+                            th:text="${workload.technician != null ? workload.technician.fullName : 'N/A'}"
+                          >
+                            John Smith
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td th:text="${workload.scheduledAppointments}">3</td>
+                    <td th:text="${workload.completedAppointments}">2</td>
+                    <td th:text="${workload.cancelledAppointments}">0</td>
+                    <td
+                      th:text="${#numbers.formatDecimal(workload.totalHoursWorked, 1, 2)}"
+                    >
+                      6.5
+                    </td>
+                    <td>
+                      <div class="progress manager-progress">
+                        <div
+                          class="progress-bar"
+                          role="progressbar"
+                          th:style="'width: ' + ${workload.efficiencyPercentage} + '%'"
+                          th:aria-valuenow="${workload.efficiencyPercentage}"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          th:aria-label="'Workload efficiency: ' + ${workload.efficiencyPercentage} + ' percent'"
+                          title="Workload Efficiency"
+                        >
+                          <span th:text="${workload.efficiencyPercentage} + '%'"
+                            >85%</span
+                          >
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // Assignment management functions
+
+      // Helper function for showing alerts
+      function showAlert(message, type = "info") {
+        const alertDiv = document.createElement("div");
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        const iconClass =
+          type === "success"
+            ? "check-circle"
+            : type === "warning"
+            ? "exclamation-triangle"
+            : type === "danger"
+            ? "exclamation-circle"
+            : "info-circle";
+        alertDiv.innerHTML = `
+                <i class="fas fa-${iconClass} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" title="Close alert" aria-label="Close alert"></button>
+            `;
+        document
+          .querySelector(".content-area")
+          .insertBefore(
+            alertDiv,
+            document.querySelector(".content-area").firstChild
+          );
+      }
+
+      function refreshWorkload() {
+        location.reload();
+      }
+
+      // Set minimum date to today for assignment date input
+      function setMinDateForAssignment() {
+        const assignmentDateInput = document.getElementById("assignmentDate");
+        const editAssignmentDateInput =
+          document.getElementById("editAssignmentDate");
+        const today = new Date();
+        const todayString = today.toISOString().split("T")[0];
+
+        if (assignmentDateInput) {
+          assignmentDateInput.setAttribute("min", todayString);
+        }
+        if (editAssignmentDateInput) {
+          editAssignmentDateInput.setAttribute("min", todayString);
+        }
+      }
+
+      // Submit assignment form from modal
+      function submitAssignment() {
+        const form = document.getElementById("assignmentForm");
+        const formData = new FormData(form);
+
+        // Validate required fields
+        const bookingId = formData.get("bookingId");
+        const technicianId = formData.get("technicianId");
+        const assignmentDate = formData.get("assignmentDate");
+        const assignmentTime = formData.get("assignmentTime");
+
+        if (!bookingId || !technicianId || !assignmentDate || !assignmentTime) {
+          showNotification("Please fill in all required fields", "error");
+          return;
+        }
+
+        // Combine date and time
+        const assignmentDateTime = assignmentDate + "T" + assignmentTime;
+
+        // Create a new form data object with the correct field names
+        const submitData = new FormData();
+        submitData.append("bookingId", bookingId);
+        submitData.append("technicianId", technicianId);
+        submitData.append("assignmentDate", assignmentDateTime);
+        submitData.append("notes", formData.get("notes") || "");
+
+        fetch("/manager/assignments/assign", {
+          method: "POST",
+          body: submitData,
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.text();
+            } else {
+              return response.text().then((text) => {
+                throw new Error(`Server error: ${text}`);
+              });
+            }
+          })
+          .then((data) => {
+            showNotification("Technician assigned successfully!", "success");
+            // Close modal and refresh page
+            const modal = bootstrap.Modal.getInstance(
+              document.getElementById("assignmentModal")
+            );
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification(
+              "Error assigning technician: " + error.message,
+              "error"
+            );
+          });
+      }
+
+      // Edit assignment - populate modal with data
+      function editAssignment(button) {
+        const assignmentId = button.getAttribute("data-assignment-id");
+        const bookingId = button.getAttribute("data-booking-id");
+        const bookingNumber = button.getAttribute("data-booking-number");
+        const customerName = button.getAttribute("data-customer-name");
+        const vehicleNumber = button.getAttribute("data-vehicle-number");
+        const serviceType = button.getAttribute("data-service-type");
+        const technicianId = button.getAttribute("data-technician-id");
+        const assignedById = button.getAttribute("data-assigned-by-id");
+        const assignmentDate = button.getAttribute("data-assignment-date");
+        const assignmentTime = button.getAttribute("data-assignment-time");
+        const status = button.getAttribute("data-status");
+        const notes = button.getAttribute("data-notes");
+
+        // Check if assignment ID is valid
+        if (assignmentId === "N/A" || !assignmentId) {
+          showNotification("Invalid assignment data", "error");
+          return;
+        }
+
+        // Populate the edit form
+        document.getElementById("editAssignmentId").value = assignmentId;
+        document.getElementById("editBookingId").value = bookingId;
+        document.getElementById("editAssignedById").value = assignedById;
+        document.getElementById("editBookingNumber").value = bookingNumber;
+        document.getElementById("editCustomerName").value = customerName;
+        document.getElementById("editVehicleNumber").value = vehicleNumber;
+        document.getElementById("editServiceType").value = serviceType;
+        document.getElementById("editTechnician").value =
+          technicianId !== "N/A" ? technicianId : "";
+        document.getElementById("editAssignmentDate").value =
+          assignmentDate !== "N/A" ? assignmentDate : "";
+        document.getElementById("editAssignmentTime").value =
+          assignmentTime !== "N/A" ? assignmentTime : "";
+        document.getElementById("editStatus").value =
+          status !== "N/A" ? status : "";
+        document.getElementById("editNotes").value =
+          notes !== "N/A" ? notes || "" : "";
+
+        // Show the modal
+        const editModal = new bootstrap.Modal(
+          document.getElementById("editAssignmentModal")
+        );
+        editModal.show();
+      }
+
+      // Update assignment via form
+      function updateAssignment() {
+        const form = document.getElementById("editAssignmentForm");
+        const formData = new FormData(form);
+
+        const assignmentId = formData.get("assignmentId");
+        const technicianId = formData.get("technicianId");
+        const assignmentDate = formData.get("assignmentDate");
+        const assignmentTime = formData.get("assignmentTime");
+        const status = formData.get("status");
+        const notes = formData.get("notes");
+
+        // Debug logging
+        console.log("Assignment update data:", {
+          assignmentId,
+          technicianId,
+          assignmentDate,
+          assignmentTime,
+          status,
+          notes,
+        });
+
+        // Validate required fields
+        if (!assignmentId || assignmentId === "N/A") {
+          showNotification("Invalid assignment ID", "error");
+          return;
+        }
+
+        if (!technicianId || technicianId === "N/A") {
+          showNotification("Please select a technician", "error");
+          return;
+        }
+
+        if (!assignmentDate || !assignmentTime) {
+          showNotification("Please provide both date and time", "error");
+          return;
+        }
+
+        // Combine date and time
+        const assignmentDateTime = assignmentDate + "T" + assignmentTime;
+
+        const requestBody = `technicianId=${technicianId}&assignmentDate=${assignmentDateTime}&status=${status}&notes=${encodeURIComponent(
+          notes
+        )}`;
+        console.log("Request body:", requestBody);
+
+        fetch(`/manager/assignments/${assignmentId}/update`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: requestBody,
+        })
+          .then((response) => {
+            console.log("Response status:", response.status);
+            if (response.ok) {
+              return response.text();
+            } else {
+              return response.text().then((text) => {
+                console.error("Server error response:", text);
+                throw new Error(`Server error: ${text}`);
+              });
+            }
+          })
+          .then((data) => {
+            console.log("Success response:", data);
+            showNotification("Assignment updated successfully!", "success");
+            // Close modal and refresh page
+            const editModal = bootstrap.Modal.getInstance(
+              document.getElementById("editAssignmentModal")
+            );
+            editModal.hide();
+            setTimeout(() => location.reload(), 1000);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification(
+              "Error updating assignment: " + error.message,
+              "error"
+            );
+          });
+      }
+
+      // Delete assignment
+      function deleteAssignment(assignmentId) {
+        if (
+          confirm(
+            "Are you sure you want to delete this assignment? The booking will become unassigned."
+          )
+        ) {
+          fetch(`/manager/assignments/${assignmentId}`, {
+            method: "DELETE",
+          })
+            .then((response) => {
+              if (response.ok) {
+                return response.text();
+              } else {
+                return response.text().then((text) => {
+                  throw new Error(`Server error: ${text}`);
+                });
+              }
+            })
+            .then((data) => {
+              showNotification(
+                "Assignment deleted successfully! Booking is now unassigned.",
+                "success"
+              );
+              // Refresh the page to update both assigned and unassigned lists
+              setTimeout(() => location.reload(), 1000);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showNotification(
+                "Error deleting assignment: " + error.message,
+                "error"
+              );
+            });
+        }
+      }
+
+      // Show notification
+      function showNotification(message, type) {
+        const notification = document.createElement("div");
+        notification.className = `alert alert-${
+          type === "success" ? "success" : "danger"
+        } alert-dismissible fade show position-fixed`;
+        notification.style.cssText =
+          "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+        notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" title="Close alert" aria-label="Close alert"></button>
+            `;
+        document.body.appendChild(notification);
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 3000);
+      }
+
+      // Edit technician function
+      function editTechnician(button) {
+        const technicianId = button.getAttribute("data-technician-id");
+        const userId = button.getAttribute("data-user-id");
+        const employeeId = button.getAttribute("data-employee-id");
+        const specialization = button.getAttribute("data-specialization");
+        const maxWorkload = button.getAttribute("data-max-workload");
+        const hourlyRate = button.getAttribute("data-hourly-rate");
+        const experience = button.getAttribute("data-experience");
+        const currentWorkload = button.getAttribute("data-current-workload");
+        const firstName = button.getAttribute("data-first-name");
+        const lastName = button.getAttribute("data-last-name");
+
+        // Populate the edit form
+        document.getElementById("editTechnicianId").value = technicianId;
+        document.getElementById("editUserId").value = userId;
+        document.getElementById("editEmployeeId").value = employeeId;
+        document.getElementById("editSpecialization").value = specialization;
+        document.getElementById("editMaxWorkload").value = maxWorkload;
+        document.getElementById("editHourlyRate").value = hourlyRate;
+        document.getElementById("editExperience").value = experience;
+        document.getElementById("editCurrentWorkload").value =
+          currentWorkload || "0";
+        document.getElementById("editFirstName").value = firstName || "";
+        document.getElementById("editLastName").value = lastName || "";
+
+        // Show the modal
+        const editModal = new bootstrap.Modal(
+          document.getElementById("editTechnicianModal")
+        );
+        editModal.show();
+      }
+
+      // Update technician function
+      function updateTechnician() {
+        const form = document.getElementById("editTechnicianForm");
+        const formData = new FormData(form);
+
+        const technicianId = formData.get("technicianId");
+        const specialization = formData.get("specialization");
+        const maxWorkload = formData.get("maxWorkload");
+        const hourlyRate = formData.get("hourlyRate");
+        const experience = formData.get("experience");
+
+        fetch(`/manager/technicians/${technicianId}/update`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: `specialization=${encodeURIComponent(
+            specialization
+          )}&maxWorkload=${maxWorkload}&hourlyRate=${hourlyRate}&experience=${experience}`,
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.text();
+            } else {
+              return response.text().then((text) => {
+                throw new Error(`Server error: ${text}`);
+              });
+            }
+          })
+          .then((data) => {
+            showNotification("Technician updated successfully!", "success");
+            // Close modal and refresh page
+            const editModal = bootstrap.Modal.getInstance(
+              document.getElementById("editTechnicianModal")
+            );
+            editModal.hide();
+            setTimeout(() => location.reload(), 1000);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification(
+              "Error updating technician: " + error.message,
+              "error"
+            );
+          });
+      }
+
+      // Update assignment status function
+      // View assignment function
+      function viewAssignment(button) {
+        const assignmentId = button.getAttribute("data-assignment-id");
+        const bookingNumber = button.getAttribute("data-booking-number");
+        const customerName = button.getAttribute("data-customer-name");
+        const vehicleNumber = button.getAttribute("data-vehicle-number");
+        const serviceType = button.getAttribute("data-service-type");
+        const technicianName = button.getAttribute("data-technician-name");
+        const assignedByName = button.getAttribute("data-assigned-by-name");
+        const assignmentDate = button.getAttribute("data-assignment-date");
+        const assignmentTime = button.getAttribute("data-assignment-time");
+        const status = button.getAttribute("data-status");
+        const notes = button.getAttribute("data-notes");
+        const bookingDate = button.getAttribute("data-booking-date");
+        const paymentStatus = button.getAttribute("data-payment-status");
+
+        // Populate the view form
+        document.getElementById("viewAssignmentId").textContent = assignmentId;
+        document.getElementById("viewBookingNumber").textContent =
+          bookingNumber;
+        document.getElementById("viewCustomerName").textContent = customerName;
+        document.getElementById("viewVehicleNumber").textContent =
+          vehicleNumber;
+        document.getElementById("viewServiceType").textContent = serviceType;
+        document.getElementById("viewBookingDate").textContent = bookingDate;
+        document.getElementById("viewPaymentStatus").textContent =
+          paymentStatus;
+        document.getElementById("viewTechnicianName").textContent =
+          technicianName;
+        document.getElementById("viewAssignedByName").textContent =
+          assignedByName;
+        document.getElementById("viewAssignmentDate").textContent =
+          assignmentDate + " " + assignmentTime;
+        document.getElementById("viewStatus").textContent = status;
+        document.getElementById("viewNotes").textContent =
+          notes || "No notes available";
+
+        // Show the modal
+        const viewModal = new bootstrap.Modal(
+          document.getElementById("viewAssignmentModal")
+        );
+        viewModal.show();
+      }
+
+      // View technician function
+      function viewTechnician(button) {
+        const technicianId = button.getAttribute("data-technician-id");
+        const employeeId = button.getAttribute("data-employee-id");
+        const firstName = button.getAttribute("data-first-name");
+        const lastName = button.getAttribute("data-last-name");
+        const email = button.getAttribute("data-email");
+        const phone = button.getAttribute("data-phone");
+        const specialization = button.getAttribute("data-specialization");
+        const maxWorkload = button.getAttribute("data-max-workload");
+        const currentWorkload = button.getAttribute("data-current-workload");
+        const remainingCapacity = button.getAttribute(
+          "data-remaining-capacity"
+        );
+        const hourlyRate = button.getAttribute("data-hourly-rate");
+        const experience = button.getAttribute("data-experience");
+        const createdAt = button.getAttribute("data-created-at");
+
+        // Populate the view form
+        document.getElementById("viewTechName").textContent =
+          firstName + " " + lastName;
+        document.getElementById("viewTechEmployeeId").textContent = employeeId;
+        document.getElementById("viewTechEmail").textContent = email || "N/A";
+        document.getElementById("viewTechPhone").textContent = phone || "N/A";
+        document.getElementById("viewTechExperience").textContent =
+          experience + " years";
+        document.getElementById("viewTechSpecialization").textContent =
+          specialization;
+        document.getElementById("viewTechMaxWorkload").textContent =
+          maxWorkload;
+        document.getElementById("viewTechCurrentWorkload").textContent =
+          currentWorkload;
+        document.getElementById("viewTechRemainingCapacity").textContent =
+          remainingCapacity;
+        document.getElementById("viewTechHourlyRate").textContent =
+          "Rs. " + (hourlyRate || "0");
+        document.getElementById("viewTechStatus").textContent = "Active";
+        document.getElementById("viewTechCreatedAt").textContent = createdAt;
+
+        // Show the modal
+        const viewModal = new bootstrap.Modal(
+          document.getElementById("viewTechnicianModal")
+        );
+        viewModal.show();
+      }
+
+      // Event listeners
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set current date and time as default for assignment form
+        const today = new Date();
+        const dateString = today.toISOString().split("T")[0];
+        const timeString = today.toTimeString().split(" ")[0].substring(0, 5);
+
+        const dateInput = document.getElementById("assignmentDate");
+        const timeInput = document.getElementById("assignmentTime");
+        const editDateInput = document.getElementById("editAssignmentDate");
+        const editTimeInput = document.getElementById("editAssignmentTime");
+
+        if (dateInput) {
+          dateInput.value = dateString;
+          dateInput.setAttribute("min", dateString);
+        }
+        if (timeInput) {
+          timeInput.value = timeString;
+        }
+        if (editDateInput) {
+          editDateInput.setAttribute("min", dateString);
+        }
+        if (editTimeInput) {
+          editTimeInput.value = timeString;
+        }
+
+        // Edit technician buttons
+        document.querySelectorAll(".view-technician-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            viewTechnician(this);
+          });
+        });
+
+        document.querySelectorAll(".edit-technician-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            editTechnician(this);
+          });
+        });
+
+        // Edit assignment buttons
+        document.querySelectorAll(".view-assignment-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            viewAssignment(this);
+          });
+        });
+
+        document.querySelectorAll(".edit-assignment-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            editAssignment(this);
+          });
+        });
+
+        // Delete assignment buttons
+        document.querySelectorAll(".delete-assignment-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const assignmentId = this.getAttribute("data-assignment-id");
+            deleteAssignment(assignmentId);
+          });
+        });
+
+        // Confirm edit assignment button
+        document
+          .getElementById("confirmEditAssignment")
+          .addEventListener("click", function () {
+            updateAssignment();
+          });
+
+        // Confirm edit technician button
+        document
+          .getElementById("confirmEditTechnician")
+          .addEventListener("click", function () {
+            updateTechnician();
+          });
+
+        // Initialize search and filter functionality
+        const searchInput = document.getElementById("assignedSearchInput");
+        const statusFilter = document.getElementById("assignedStatusFilter");
+        const serviceFilter = document.getElementById("assignedServiceFilter");
+        const technicianFilter = document.getElementById(
+          "assignedTechnicianFilter"
+        );
+
+        if (searchInput) {
+          searchInput.addEventListener("input", filterAssignedBookings);
+          searchInput.addEventListener("keyup", filterAssignedBookings);
+        }
+        if (statusFilter) {
+          statusFilter.addEventListener("change", filterAssignedBookings);
+        }
+        if (serviceFilter) {
+          serviceFilter.addEventListener("change", filterAssignedBookings);
+        }
+        if (technicianFilter) {
+          technicianFilter.addEventListener("change", filterAssignedBookings);
+        }
+
+        // Clear button event listener
+        const clearButton = document.querySelector(
+          'button[onclick="clearAssignedFilters()"]'
+        );
+        if (clearButton) {
+          clearButton.addEventListener("click", function (e) {
+            e.preventDefault();
+            clearAssignedFilters();
+          });
+        }
+
+        function refreshAssignedBookings() {
+          window.location.reload();
+        }
+
+        // =================== ASSIGNED BOOKINGS SEARCH AND FILTER ===================
+
+        function filterAssignedBookings() {
+          try {
+            const searchTerm = document
+              .getElementById("assignedSearchInput")
+              .value.toLowerCase();
+            const statusFilter = document.getElementById(
+              "assignedStatusFilter"
+            ).value;
+            const serviceFilter = document.getElementById(
+              "assignedServiceFilter"
+            ).value;
+            const technicianFilter = document.getElementById(
+              "assignedTechnicianFilter"
+            ).value;
+
+            const rows = document.querySelectorAll(".assigned-booking-row");
+            let visibleCount = 0;
+
+            console.log("Filtering assigned bookings:", {
+              searchTerm,
+              statusFilter,
+              serviceFilter,
+              technicianFilter,
+              totalRows: rows.length,
+            });
+
+            rows.forEach((row) => {
+              let showRow = true;
+
+              // Search filter - search across all data attributes
+              if (searchTerm) {
+                const bookingNumber =
+                  row.getAttribute("data-booking-number")?.toLowerCase() || "";
+                const customerName =
+                  row.getAttribute("data-customer-name")?.toLowerCase() || "";
+                const vehicleNumber =
+                  row.getAttribute("data-vehicle-number")?.toLowerCase() || "";
+                const serviceType =
+                  row.getAttribute("data-service-type")?.toLowerCase() || "";
+                const technicianName =
+                  row.getAttribute("data-technician-name")?.toLowerCase() || "";
+
+                if (
+                  !bookingNumber.includes(searchTerm) &&
+                  !customerName.includes(searchTerm) &&
+                  !vehicleNumber.includes(searchTerm) &&
+                  !serviceType.includes(searchTerm) &&
+                  !technicianName.includes(searchTerm)
+                ) {
+                  showRow = false;
+                }
+              }
+
+              // Status filter - filter by assignment status
+              if (showRow && statusFilter) {
+                const assignmentStatus = row.getAttribute(
+                  "data-assignment-status"
+                );
+                if (assignmentStatus && assignmentStatus !== statusFilter) {
+                  showRow = false;
+                }
+              }
+
+              // Service type filter
+              if (showRow && serviceFilter) {
+                const serviceType = row.getAttribute("data-service-type");
+                if (serviceType && serviceType !== serviceFilter) {
+                  showRow = false;
+                }
+              }
+
+              // Technician filter
+              if (showRow && technicianFilter) {
+                const technicianName = row.getAttribute("data-technician-name");
+                if (technicianName && technicianName !== technicianFilter) {
+                  showRow = false;
+                }
+              }
+
+              if (showRow) {
+                row.style.display = "";
+                visibleCount++;
+              } else {
+                row.style.display = "none";
+              }
+            });
+
+            // Update filter info
+            updateAssignedFilterInfo(visibleCount, rows.length);
+          } catch (error) {
+            console.error("Error in filterAssignedBookings:", error);
+          }
+        }
+
+        function updateAssignedFilterInfo(visibleCount, totalCount) {
+          const filterInfo = document.getElementById("assignedFilterInfo");
+          const filterText = document.getElementById("assignedFilterText");
+
+          if (visibleCount < totalCount) {
+            filterText.textContent = `Showing ${visibleCount} of ${totalCount} assigned bookings`;
+            filterInfo.style.display = "flex";
+          } else {
+            filterInfo.style.display = "none";
+          }
+        }
+
+        function clearAssignedFilters() {
+          try {
+            // Clear all filter inputs
+            const searchInput = document.getElementById("assignedSearchInput");
+            const statusFilter = document.getElementById(
+              "assignedStatusFilter"
+            );
+            const serviceFilter = document.getElementById(
+              "assignedServiceFilter"
+            );
+            const technicianFilter = document.getElementById(
+              "assignedTechnicianFilter"
+            );
+
+            if (searchInput) searchInput.value = "";
+            if (statusFilter) statusFilter.value = "";
+            if (serviceFilter) serviceFilter.value = "";
+            if (technicianFilter) technicianFilter.value = "";
+
+            // Trigger the filter function to show all results
+            filterAssignedBookings();
+
+            // Add visual feedback
+            const clearButton = document.querySelector(
+              'button[onclick="clearAssignedFilters()"]'
+            );
+            if (clearButton) {
+              clearButton.style.transform = "scale(0.95)";
+              setTimeout(() => {
+                clearButton.style.transform = "scale(1)";
+              }, 150);
+            }
+
+            console.log("Filters cleared successfully");
+          } catch (error) {
+            console.error("Error clearing filters:", error);
+          }
+        }
+
+        // Add event listener for assignment modal to ensure minimum date is set
+        const assignmentModal = document.getElementById("assignmentModal");
+        if (assignmentModal) {
+          assignmentModal.addEventListener("shown.bs.modal", function () {
+            setMinDateForAssignment();
+          });
+        }
+
+        // Add event listener for edit assignment modal to ensure minimum date is set
+        const editAssignmentModal = document.getElementById(
+          "editAssignmentModal"
+        );
+        if (editAssignmentModal) {
+          editAssignmentModal.addEventListener("shown.bs.modal", function () {
+            setMinDateForAssignment();
+          });
+        }
+      });
+    </script>
+
+    <!-- Assignment Modal -->
+    <div
+      class="modal fade"
+      id="assignmentModal"
+      tabindex="-1"
+      aria-labelledby="assignmentModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="assignmentModalLabel">
+              <i class="fas fa-user-plus me-2"></i>
+              Assign Technician to Booking
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form
+              id="assignmentForm"
+              th:action="@{/manager/assignments/assign}"
+              method="post"
+            >
+              <div class="mb-3">
+                <label for="bookingSelect" class="form-label"
+                  >Select Booking *</label
+                >
+                <select
+                  class="form-select"
+                  id="bookingSelect"
+                  name="bookingId"
+                  required
+                  aria-label="Select booking"
+                >
+                  <option value="">Choose a booking...</option>
+                  <option
+                    th:each="booking : ${unassignedBookingsList}"
+                    th:value="${booking.id}"
+                    th:text="${booking.bookingNumber + ' - ' + booking.customerName + ' (' + booking.serviceType + ')'}"
+                  >
+                    BK001 - John Doe (Oil Change)
+                  </option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="technicianSelect" class="form-label"
+                  >Select Technician *</label
+                >
+                <select
+                  class="form-select"
+                  id="technicianSelect"
+                  name="technicianId"
+                  required
+                  aria-label="Select technician"
+                >
+                  <option value="">Choose a technician...</option>
+                  <option
+                    th:each="tech : ${technicians}"
+                    th:value="${tech.id}"
+                    th:text="${tech.fullName + ' (' + tech.specialization + ') - Available: ' + tech.remainingCapacity + '/' + tech.maxDailyWorkload}"
+                  >
+                    John Doe (Engine Repair) - Available: 3/6
+                  </option>
+                </select>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="assignmentDate" class="form-label"
+                      >Assignment Date *</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="assignmentDate"
+                      name="assignmentDate"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="assignmentTime" class="form-label"
+                      >Assignment Time *</label
+                    >
+                    <input
+                      type="time"
+                      class="form-control"
+                      id="assignmentTime"
+                      name="assignmentTime"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="assignmentNotes" class="form-label"
+                  >Assignment Notes</label
+                >
+                <textarea
+                  class="form-control"
+                  id="assignmentNotes"
+                  name="notes"
+                  rows="3"
+                  placeholder="Add any specific instructions or notes for this assignment..."
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="submitAssignment()"
+            >
+              <i class="fas fa-user-plus me-2"></i>
+              Assign Technician
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Technician Modal -->
+    <div
+      class="modal fade"
+      id="viewTechnicianModal"
+      tabindex="-1"
+      aria-labelledby="viewTechnicianModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewTechnicianModalLabel">
+              <i class="fas fa-eye me-2"></i>
+              Technician Details
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header">
+                    <h6 class="mb-0">
+                      <i class="fas fa-user me-2"></i>Personal Information
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-2">
+                      <strong>Name:</strong>
+                      <span id="viewTechName" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Employee ID:</strong>
+                      <span id="viewTechEmployeeId" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Email:</strong>
+                      <span id="viewTechEmail" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Phone:</strong>
+                      <span id="viewTechPhone" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Experience:</strong>
+                      <span id="viewTechExperience" class="ms-2"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header">
+                    <h6 class="mb-0">
+                      <i class="fas fa-cogs me-2"></i>Work Information
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-2">
+                      <strong>Specialization:</strong>
+                      <span id="viewTechSpecialization" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Max Daily Workload:</strong>
+                      <span id="viewTechMaxWorkload" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Current Workload:</strong>
+                      <span id="viewTechCurrentWorkload" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Remaining Capacity:</strong>
+                      <span id="viewTechRemainingCapacity" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Hourly Rate:</strong>
+                      <span id="viewTechHourlyRate" class="ms-2"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <i class="fas fa-info-circle me-2"></i>Additional Information
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-2">
+                  <strong>Status:</strong>
+                  <span id="viewTechStatus" class="ms-2"></span>
+                </div>
+                <div class="mb-2">
+                  <strong>Created At:</strong>
+                  <span id="viewTechCreatedAt" class="ms-2"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Technician Modal -->
+    <div
+      class="modal fade"
+      id="editTechnicianModal"
+      tabindex="-1"
+      aria-labelledby="editTechnicianModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editTechnicianModalLabel">
+              <i class="fas fa-user-edit me-2"></i>
+              Edit Technician
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="editTechnicianForm">
+              <input type="hidden" id="editTechnicianId" name="technicianId" />
+              <input type="hidden" id="editUserId" name="userId" />
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editEmployeeId" class="form-label"
+                      >Employee ID</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editEmployeeId"
+                      name="employeeId"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editSpecialization" class="form-label"
+                      >Specialization *</label
+                    >
+                    <select
+                      class="form-select"
+                      id="editSpecialization"
+                      name="specialization"
+                      required
+                      aria-label="Select specialization"
+                    >
+                      <option value="">Select Specialization</option>
+                      <option value="Engine Repair">Engine Repair</option>
+                      <option value="Brake System">Brake System</option>
+                      <option value="Transmission">Transmission</option>
+                      <option value="Electrical">Electrical</option>
+                      <option value="AC System">AC System</option>
+                      <option value="General Maintenance">
+                        General Maintenance
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editMaxWorkload" class="form-label"
+                      >Max Daily Workload *</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="editMaxWorkload"
+                      name="maxWorkload"
+                      min="1"
+                      max="20"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editHourlyRate" class="form-label"
+                      >Hourly Rate (Rs.)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="editHourlyRate"
+                      name="hourlyRate"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editExperience" class="form-label"
+                      >Experience (Years)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="editExperience"
+                      name="experience"
+                      min="0"
+                      max="50"
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editCurrentWorkload" class="form-label"
+                      >Current Workload</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="editCurrentWorkload"
+                      name="currentWorkload"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editFirstName" class="form-label"
+                      >First Name</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editFirstName"
+                      name="firstName"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editLastName" class="form-label"
+                      >Last Name</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editLastName"
+                      name="lastName"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="confirmEditTechnician"
+            >
+              <i class="fas fa-save me-2"></i>
+              Update Technician
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Assignment Modal -->
+    <div
+      class="modal fade"
+      id="editAssignmentModal"
+      tabindex="-1"
+      aria-labelledby="editAssignmentModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editAssignmentModalLabel">
+              <i class="fas fa-edit me-2"></i>
+              Edit Assignment
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="editAssignmentForm">
+              <input type="hidden" id="editAssignmentId" name="assignmentId" />
+              <input type="hidden" id="editBookingId" name="bookingId" />
+              <input type="hidden" id="editAssignedById" name="assignedById" />
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editBookingNumber" class="form-label"
+                      >Booking Number</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editBookingNumber"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editCustomerName" class="form-label"
+                      >Customer Name</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editCustomerName"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editTechnician" class="form-label"
+                      >Technician *</label
+                    >
+                    <select
+                      class="form-select"
+                      id="editTechnician"
+                      name="technicianId"
+                      required
+                      aria-label="Select technician"
+                    >
+                      <option value="">Select Technician</option>
+                      <option
+                        th:each="tech : ${technicians}"
+                        th:value="${tech.id}"
+                        th:text="${tech.fullName + ' (' + tech.specialization + ')'}"
+                      >
+                        John Doe (Engine Repair)
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editStatus" class="form-label">Status *</label>
+                    <select
+                      class="form-select"
+                      id="editStatus"
+                      name="status"
+                      required
+                      aria-label="Select status"
+                    >
+                      <option value="ASSIGNED">Assigned</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editAssignmentDate" class="form-label"
+                      >Assignment Date *</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="editAssignmentDate"
+                      name="assignmentDate"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editAssignmentTime" class="form-label"
+                      >Assignment Time *</label
+                    >
+                    <input
+                      type="time"
+                      class="form-control"
+                      id="editAssignmentTime"
+                      name="assignmentTime"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editVehicleNumber" class="form-label"
+                      >Vehicle Number</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editVehicleNumber"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="editServiceType" class="form-label"
+                      >Service Type</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="editServiceType"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="editNotes" class="form-label">Notes</label>
+                <textarea
+                  class="form-control"
+                  id="editNotes"
+                  name="notes"
+                  rows="3"
+                  placeholder="Assignment notes..."
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="confirmEditAssignment"
+            >
+              <i class="fas fa-save me-2"></i>
+              Update Assignment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Assignment Modal -->
+    <div
+      class="modal fade"
+      id="viewAssignmentModal"
+      tabindex="-1"
+      aria-labelledby="viewAssignmentModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewAssignmentModalLabel">
+              <i class="fas fa-eye me-2"></i>
+              Assignment Details
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header">
+                    <h6 class="mb-0">
+                      <i class="fas fa-calendar-alt me-2"></i>Booking
+                      Information
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-2">
+                      <strong>Booking Number:</strong>
+                      <span id="viewBookingNumber" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Customer Name:</strong>
+                      <span id="viewCustomerName" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Vehicle Number:</strong>
+                      <span id="viewVehicleNumber" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Service Type:</strong>
+                      <span id="viewServiceType" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Booking Date:</strong>
+                      <span id="viewBookingDate" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Payment Status:</strong>
+                      <span id="viewPaymentStatus" class="ms-2"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header">
+                    <h6 class="mb-0">
+                      <i class="fas fa-user-cog me-2"></i>Assignment Information
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-2">
+                      <strong>Assignment ID:</strong>
+                      <span id="viewAssignmentId" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Technician:</strong>
+                      <span id="viewTechnicianName" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Assigned By:</strong>
+                      <span id="viewAssignedByName" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Assignment Date:</strong>
+                      <span id="viewAssignmentDate" class="ms-2"></span>
+                    </div>
+                    <div class="mb-2">
+                      <strong>Status:</strong>
+                      <span id="viewStatus" class="ms-2"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">
+                  <i class="fas fa-sticky-note me-2"></i>Notes
+                </h6>
+              </div>
+              <div class="card-body">
+                <div id="viewNotes" class="text-muted"></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

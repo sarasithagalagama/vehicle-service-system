@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<!-- Inventory manager dashboard template for inventory management and stock control -->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Meta tags for responsive design and character encoding -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSRF token meta tags for security -->
+    <meta name="_csrf" th:content="${_csrf?.token ?: ''}">
+    <meta name="_csrf_header" th:content="${_csrf?.headerName ?: ''}">
+    <title>Inventory Manager Dashboard - Vehicle Service System</title>
+    <!-- External CSS libraries for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS for dashboard styling -->
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <style>
+        /* Inventory-specific styles */
+        .inventory-row:hover {
+            background-color: var(--gray-50);
+        }
+        
+        .low-stock-item {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left: 4px solid var(--warning-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .low-stock-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .filter-info {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            border: 1px solid #93c5fd;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-sm) var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .stat-card:hover .stat-icon {
+            transform: scale(1.1);
+        }
+        
+        .action-card.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-lg);
+        }
+        
+        .action-card.active i,
+        .action-card.active h5,
+        .action-card.active p {
+            color: white;
+        }
+        
+        .btn-action {
+            width: 2rem;
+            height: 2rem;
+            border-radius: var(--radius-md);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            margin: 0 var(--spacing-xs);
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn-action:hover {
+            transform: scale(1.1);
+        }
+        
+        .gap-2 {
+            gap: var(--spacing-sm);
+        }
+        
+        /* Enhanced validation styles */
+        .form-control.is-valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        .valid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #28a745;
+        }
+        
+        .invalid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+        
+        .form-control.is-valid ~ .valid-feedback {
+            display: block;
+        }
+        
+        .form-control.is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+        
+        /* Real-time validation indicator */
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        /* Loading state for form submission */
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        
+        /* Form validation summary */
+        .validation-summary {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 0.375rem;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .validation-summary.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="/staff/dashboard" class="sidebar-brand">
+                <i class="fas fa-car"></i>
+                Vehicle Service
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/staff/dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-boxes text-primary"></i>
+                            Inventory Manager Dashboard
+                        </h1>
+                        <p class="page-subtitle">Manage inventory, track stock levels, and issue parts to technicians</p>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar">
+                            <span th:text="${user.firstName != null and user.lastName != null ? #strings.concat(#strings.substring(user.firstName, 0, 1), #strings.substring(user.lastName, 0, 1)) : 'IM'}"></span>
+                        </div>
+                        <div>
+                            <div class="fw-bold" th:text="${user.firstName != null and user.lastName != null ? #strings.concat(user.firstName, ' ', user.lastName) : user.username}"></div>
+                            <div class="text-muted small">Inventory Manager</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close alert"></button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="stat-number" th:text="${totalItems}">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-number" th:text="${inStockItems}">0</div>
+                <div class="stat-label">In Stock</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-number" th:text="${lowStockItems}">0</div>
+                <div class="stat-label">Low Stock</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-number" th:text="${outOfStockItems}">0</div>
+                <div class="stat-label">Out of Stock</div>
+            </div>
+        </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="action-card" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus"></i>
+                    <h5>Add New Item</h5>
+                    <p>Register new inventory</p>
+                </div>
+
+                <div class="action-card" onclick="showAllItems(event)">
+                    <i class="fas fa-boxes"></i>
+                    <h5>All Items</h5>
+                    <p>View all inventory</p>
+                </div>
+
+                <div class="action-card" onclick="showLowStock(event)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h5>Low Stock</h5>
+                    <p>Items needing restock</p>
+                </div>
+
+                <div class="action-card" onclick="showTransactions(event)">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h5>Transactions</h5>
+                    <p>View all movements</p>
+                </div>
+
+                <div class="action-card" onclick="showIssueParts(event)">
+                    <i class="fas fa-hand-holding"></i>
+                    <h5>Issue Parts</h5>
+                    <p>Issue parts to technicians</p>
+                </div>
+            </div>
+
+        <!-- All Items Section -->
+        <div id="allItemsSection" class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-boxes text-primary"></i>
+                        All Inventory Items
+                    </h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fas fa-plus"></i> Add New Item
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Search and Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchInput" 
+                                   placeholder="Search items by name..." 
+                                   onkeyup="filterItems()">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="categoryFilter" class="visually-hidden">Filter by category</label>
+                        <select class="form-select" id="categoryFilter" onchange="filterItems()" aria-label="Filter by category">
+                            <option value="">All Categories</option>
+                            <option value="Engine Parts">Engine Parts</option>
+                            <option value="Brake System">Brake System</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Filters">Filters</option>
+                            <option value="Fluids">Fluids</option>
+                            <option value="Tools">Tools</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="visually-hidden">Filter by status</label>
+                        <select class="form-select" id="statusFilter" onchange="filterItems()" aria-label="Filter by status">
+                            <option value="">All Status</option>
+                            <option value="in-stock">In Stock</option>
+                            <option value="low-stock">Low Stock</option>
+                            <option value="out-of-stock">Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filter Results Info -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info d-flex align-items-center hidden-alert" id="filterInfo">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="filterText">Showing filtered results</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Table -->
+                <div th:if="${inventoryItems != null and !inventoryItems.isEmpty()}" class="table-responsive">
+                    <table class="table" id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Reorder Level</th>
+                                <th>Unit Price</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <tr th:each="item : ${inventoryItems}" class="inventory-row" 
+                                th:data-item-name="${item.itemName}"
+                                th:data-category="${item.category}"
+                                th:data-quantity="${item.quantity}"
+                                th:data-reorder-level="${item.reorderLevel}">
+                                <td>
+                                    <strong th:text="${item.itemName}">Item Name</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary" th:text="${item.category}">Category</span>
+                                </td>
+                                <td>
+                                    <span th:text="${item.quantity}">0</span>
+                                </td>
+                                <td th:text="${item.reorderLevel}">0</td>
+                                <td th:text="${#strings.concat('LKR ', #numbers.formatDecimal(item.unitPrice, 1, 2))}">LKR 0.00</td>
+                                <td>
+                                    <span th:if="${item.quantity == 0}" class="badge bg-danger">Out of Stock</span>
+                                    <span th:if="${item.quantity > 0 and item.quantity <= item.reorderLevel}" class="badge bg-warning">Low Stock</span>
+                                    <span th:if="${item.quantity > item.reorderLevel}" class="badge bg-success">In Stock</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn-action btn-primary edit-btn"
+                                                th:data-item-id="${item.id}"
+                                                th:data-item-name="${item.itemName}"
+                                                th:data-category="${item.category}"
+                                                th:data-quantity="${item.quantity}"
+                                                th:data-reorder-level="${item.reorderLevel}"
+                                                th:data-unit-price="${item.unitPrice}"
+                                                data-bs-toggle="modal" data-bs-target="#editItemModal" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn-action btn-success" 
+                                                th:data-item-id="${item.id}"
+                                                onclick="addStock(this.dataset.itemId)" title="Add Stock">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button type="button" class="btn-action btn-danger" 
+                                                th:data-item-id="${item.id}"
+                                                th:data-item-name="${item.itemName}"
+                                                onclick="showDeleteModal(this.dataset.itemId, this.dataset.itemName)" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${inventoryItems == null or inventoryItems.isEmpty()}" class="empty-state">
+                    <i class="fas fa-boxes"></i>
+                    <h5>No Inventory Items</h5>
+                    <p>No inventory items found. Add your first item to get started.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fas fa-plus"></i> Add New Item
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Low Stock Section -->
+        <div id="lowStockSection" class="card hidden-section">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    Low Stock Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Stock Status Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="lowStockFilter" class="visually-hidden">Filter low stock items</label>
+                        <select class="form-select" id="lowStockFilter" onchange="filterLowStockItems()" aria-label="Filter low stock items">
+                            <option value="">All Stock Levels</option>
+                            <option value="low">Low Stock Only</option>
+                            <option value="out">Out of Stock Only</option>
+                            <option value="critical">Critical (≤5 items)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-danger" onclick="clearLowStockFilters()">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+                </div>
+                <div th:if="${lowStockAlerts != null and !lowStockAlerts.isEmpty()}" class="low-stock-list" id="lowStockList">
+                    <div th:each="item : ${lowStockAlerts}" class="low-stock-item low-stock-row" 
+                         th:data-item-name="${item.itemName}"
+                         th:data-quantity="${item.quantity}"
+                         th:data-reorder-level="${item.reorderLevel}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 th:text="${item.itemName}" class="mb-1">Item Name</h6>
+                                <small class="text-muted">
+                                    <span th:text="${item.quantity}">0</span> units remaining
+                                    (Reorder at: <span th:text="${item.reorderLevel}">0</span>)
+                                </small>
+                                <div class="text-muted small mt-1">
+                                    <span th:text="${#strings.concat('LKR ', #numbers.formatDecimal(item.unitPrice, 1, 2))}">LKR 0.00</span> per unit
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    th:data-item-id="${item.id}"
+                                    th:data-item-name="${item.itemName}"
+                                    th:data-category="${item.category}"
+                                    th:data-quantity="${item.quantity}"
+                                    th:data-reorder-level="${item.reorderLevel}"
+                                    th:data-unit-price="${item.unitPrice}"
+                                    data-bs-toggle="modal" data-bs-target="#editItemModal">
+                                <i class="fas fa-edit"></i> Edit Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${lowStockAlerts == null or lowStockAlerts.isEmpty()}" class="empty-state">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <h5>All Good!</h5>
+                    <p>No low stock alerts at the moment.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div id="transactionsSection" class="card hidden-section">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-exchange-alt text-primary"></i>
+                    Recent Transactions
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Transaction Search and Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form method="get" action="/staff/dashboard" class="d-flex" id="transactionSearchForm">
+                            <input type="hidden" name="search" th:value="${search}">
+                            <input type="hidden" name="category" th:value="${category}">
+                            <input type="text" class="form-control me-2" name="transactionSearch" 
+                                   th:value="${transactionSearch}" placeholder="Search transactions..."
+                                   onkeyup="autoSubmitTransactionSearch()">
+                            <button type="submit" class="btn btn-outline-primary" aria-label="Search transactions">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-4">
+                        <form method="get" action="/staff/dashboard" class="d-flex" id="transactionTypeForm">
+                            <input type="hidden" name="search" th:value="${search}">
+                            <input type="hidden" name="category" th:value="${category}">
+                            <input type="hidden" name="transactionSearch" th:value="${transactionSearch}">
+                            <label for="transactionType" class="visually-hidden">Filter transaction type</label>
+                            <select name="transactionType" id="transactionType" class="form-select me-2" onchange="autoSubmitTransactionType()" aria-label="Filter transaction type">
+                                <option value="">All Types</option>
+                                <option value="IN" th:selected="${transactionType == 'IN'}">Stock In</option>
+                                <option value="OUT" th:selected="${transactionType == 'OUT'}">Stock Out</option>
+                            </select>
+                            <button type="submit" class="btn btn-outline-secondary" aria-label="Filter transactions">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="/staff/dashboard" class="btn btn-outline-danger">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </div>
+                <div th:if="${recentTransactions != null and !recentTransactions.isEmpty()}" class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>Date</th>
+                                <th>Staff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="transaction : ${recentTransactions}">
+                                <td th:text="${transaction.item.itemName}">Item Name</td>
+                                <td>
+                                    <span th:switch="${transaction.transactionType.name()}">
+                                        <span th:case="IN" class="badge bg-success">IN</span>
+                                        <span th:case="OUT" class="badge bg-danger">OUT</span>
+                                        <span th:case="*" class="badge bg-secondary" th:text="${transaction.transactionType.name()}">UNKNOWN</span>
+                                    </span>
+                                </td>
+                                <td th:text="${transaction.quantity}">0</td>
+                                <td th:text="${#temporals.format(transaction.date, 'MM-dd HH:mm')}">Date</td>
+                                <td th:text="${transaction.staff.firstName != null and transaction.staff.lastName != null ? #strings.concat(transaction.staff.firstName, ' ', transaction.staff.lastName) : transaction.staff.username}">Staff</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:if="${recentTransactions == null or recentTransactions.isEmpty()}" class="empty-state">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h5>No Transactions</h5>
+                    <p>No recent inventory transactions.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Parts Section -->
+        <div id="issuePartsSection" class="card hidden-section">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-hand-holding text-primary"></i>
+                    Issue Parts to Technicians
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="issuePartsForm" method="post" action="/staff/inventory/issue-parts">
+                    <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="technicianSelect" class="form-label">Select Technician <span class="text-danger">*</span></label>
+                                <select class="form-select" id="technicianSelect" name="technicianId" required>
+                                    <option value="">Choose a technician...</option>
+                                    <option th:each="tech : ${technicians}" th:value="${tech.id}" th:text="${#strings.concat(tech.firstName, ' ', tech.lastName)}">Technician Name</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a technician.
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Technician selected!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="itemSelect" class="form-label">Select Part <span class="text-danger">*</span></label>
+                                <select class="form-select" id="itemSelect" name="itemId" required>
+                                    <option value="">Choose a part...</option>
+                                    <option th:each="item : ${inventoryItems}" th:value="${item.id}" th:text="${#strings.concat(item.itemName, ' (Stock: ', #strings.toString(item.quantity), ')')}">Item Name</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select an item.
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Item selected!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="issueQuantity" class="form-label">Quantity to Issue <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="issueQuantity" name="quantity" min="1" max="50" required
+                                       placeholder="Enter quantity (1-50)">
+                                <div class="invalid-feedback">
+                                    Please enter a valid quantity (1-50).
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Quantity is valid!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="issueDate" class="form-label">Issue Date <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="issueDate" name="issueDate" required>
+                                <div class="invalid-feedback">
+                                    Please select a valid issue date (today or future).
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Date is valid!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="issueNotes" class="form-label">Notes</label>
+                                <input type="text" class="form-control" id="issueNotes" name="notes" placeholder="Optional notes...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="issuePurpose" class="form-label">Purpose/Job Reference</label>
+                                <input type="text" class="form-control" id="issuePurpose" name="purpose" placeholder="e.g., Job #12345, Repair XYZ...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" onclick="clearIssueForm()">Clear Form</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-hand-holding"></i> Issue Parts
+                        </button>
+                    </div>
+                </form>
+            </div>
+            </div>
+        </div>
+
+            <!-- Add Item Modal -->
+        <div class="modal fade" id="addItemModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-plus me-2"></i>Add New Inventory Item
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+                    </div>
+                <form action="/staff/inventory/save" method="post" novalidate>
+                    <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                    <div class="modal-body">
+                        <!-- Item Information Section -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-box me-2"></i>Item Information
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="itemName" class="form-label">Item Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="itemName" name="itemName" required 
+                                           minlength="2" maxlength="100" pattern="[A-Za-z0-9\s\-_]+"
+                                           title="Item name must contain letters, numbers, spaces, hyphens, or underscores, 2-100 characters"
+                                           placeholder="Enter item name (e.g., Engine Oil 5W-30)">
+                                    <div class="invalid-feedback">
+                                        Please provide a valid item name (2-100 characters, alphanumeric with spaces, hyphens, or underscores).
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ✓ Item name looks good!
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="Engine Parts">Engine Parts</option>
+                                        <option value="Brake System">Brake System</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Filters">Filters</option>
+                                        <option value="Fluids">Fluids</option>
+                                        <option value="Tools">Tools</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select a valid category.
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ✓ Category selected!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stock & Pricing Information Section -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3 border-bottom pb-2">
+                                <i class="fas fa-chart-line me-2"></i>Stock & Pricing Information
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="quantity" class="form-label">Initial Quantity <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" max="50" required
+                                           title="Enter the initial quantity of items in stock"
+                                           placeholder="Enter quantity (1-50)">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid quantity (1-50).
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ✓ Quantity is valid!
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="reorderLevel" class="form-label">Reorder Level <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="reorderLevel" name="reorderLevel" min="1" max="50" required
+                                           title="Enter the minimum quantity before reordering"
+                                           placeholder="Enter reorder level (1-50)">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid reorder level (1-50).
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ✓ Reorder level is valid!
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="unitPrice" class="form-label">Unit Price (LKR) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="unitPrice" name="unitPrice" min="0" max="99999.99" step="0.01" required
+                                           title="Enter the unit price in Sri Lankan Rupees"
+                                           placeholder="Enter price (0.00-99,999.99)">
+                                    <div class="invalid-feedback">
+                                        Please enter a valid unit price (0.00-99,999.99).
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ✓ Price is valid!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+            <!-- Edit Item Modal -->
+            <div class="modal fade" id="editItemModal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>Edit Inventory Item
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+                        </div>
+            <form action="/staff/inventory/update" method="post" novalidate>
+                <input type="hidden" id="editItemId" name="id">
+                <input type="hidden" name="redirect" value="/staff/dashboard">
+                <input type="hidden" name="_csrf" th:value="${_csrf?.token ?: ''}">
+                <div class="modal-body">
+                    <!-- Item Information Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3 border-bottom pb-2">
+                            <i class="fas fa-box me-2"></i>Item Information
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="editItemName" class="form-label">Item Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editItemName" name="itemName" required 
+                                       minlength="2" maxlength="100" pattern="[A-Za-z0-9\s\-_]+"
+                                       title="Item name must contain letters, numbers, spaces, hyphens, or underscores, 2-100 characters">
+                                <div class="invalid-feedback">
+                                    Please provide a valid item name (2-100 characters, alphanumeric with spaces, hyphens, or underscores).
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="editCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editCategory" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Engine Parts">Engine Parts</option>
+                                    <option value="Brake System">Brake System</option>
+                                    <option value="Electrical">Electrical</option>
+                                    <option value="Filters">Filters</option>
+                                    <option value="Fluids">Fluids</option>
+                                    <option value="Tools">Tools</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a valid category.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock & Pricing Information Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3 border-bottom pb-2">
+                            <i class="fas fa-chart-line me-2"></i>Stock & Pricing Information
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="editQuantity" class="form-label">Current Quantity <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="editQuantity" name="quantity" min="1" max="50" required
+                                       title="Enter the current quantity of items in stock"
+                                       placeholder="Enter quantity (1-50)">
+                                <div class="invalid-feedback">
+                                    Please enter a valid quantity (1-50).
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Quantity is valid!
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="editReorderLevel" class="form-label">Reorder Level <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="editReorderLevel" name="reorderLevel" min="1" max="50" required
+                                       title="Enter the minimum quantity before reordering"
+                                       placeholder="Enter reorder level (1-50)">
+                                <div class="invalid-feedback">
+                                    Please enter a valid reorder level (1-50).
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Reorder level is valid!
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="editUnitPrice" class="form-label">Unit Price (LKR) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="editUnitPrice" name="unitPrice" min="0" max="99999.99" step="0.01" required
+                                       title="Enter the unit price in Sri Lankan Rupees"
+                                       placeholder="Enter price (0.00-99,999.99)">
+                                <div class="invalid-feedback">
+                                    Please enter a valid unit price (0.00-99,999.99).
+                                </div>
+                                <div class="valid-feedback">
+                                    ✓ Price is valid!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+            <!-- Add Stock Modal -->
+            <div class="modal fade" id="addStockModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-plus text-success"></i>
+                                Add Stock
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+                        </div>
+                <form id="addStockForm" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="addQuantity" class="form-label">Quantity to Add <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="addQuantity" name="quantity" min="1" max="50" required
+                                   placeholder="Enter quantity to add (1-50)">
+                            <div class="invalid-feedback">
+                                Please enter a valid quantity (1-50).
+                            </div>
+                            <div class="valid-feedback">
+                                ✓ Quantity is valid!
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add Stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+            <!-- Delete Confirmation Modal -->
+            <div class="modal fade" id="deleteModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-trash text-danger"></i>
+                                Confirm Delete
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+                        </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the item <strong id="itemNameToDelete"></strong>?</p>
+                    <p class="text-danger"><small>This action cannot be undone.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button id="deleteButton" type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash"></i> Delete Item
+                    </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Real-time validation configuration
+        const validationRules = {
+            itemName: {
+                required: true,
+                minLength: 2,
+                maxLength: 100,
+                pattern: /^[A-Za-z0-9\s\-_]+$/,
+                message: 'Item name must be 2-100 characters, alphanumeric with spaces, hyphens, or underscores'
+            },
+            category: {
+                required: true,
+                message: 'Please select a category'
+            },
+            quantity: {
+                required: true,
+                min: 1,
+                max: 50,
+                message: 'Quantity must be between 1 and 50'
+            },
+            reorderLevel: {
+                required: true,
+                min: 1,
+                max: 50,
+                message: 'Reorder level must be between 1 and 50'
+            },
+            unitPrice: {
+                required: true,
+                min: 0,
+                max: 99999.99,
+                step: 0.01,
+                message: 'Unit price must be between 0.00 and 99,999.99'
+            },
+            technicianId: {
+                required: true,
+                message: 'Please select a technician'
+            },
+            itemId: {
+                required: true,
+                message: 'Please select an item'
+            },
+            issueQuantity: {
+                required: true,
+                min: 1,
+                max: 50,
+                message: 'Quantity must be between 1 and 50'
+            },
+            issueDate: {
+                required: true,
+                message: 'Please select an issue date'
+            },
+            // Stock form validations
+            'addQuantity': {
+                required: true,
+                min: 1,
+                max: 50,
+                message: 'Quantity must be between 1 and 50'
+            }
+        };
+
+        // Real-time validation functions
+        function validateField(field, rules) {
+            const value = field.value.trim();
+            const fieldName = field.name;
+            const rule = rules[fieldName];
+            
+            if (!rule) return true;
+            
+            let isValid = true;
+            let errorMessage = '';
+            
+            // Required validation
+            if (rule.required && (!value || value === '')) {
+                isValid = false;
+                errorMessage = rule.message || 'This field is required';
+            }
+            
+            // Pattern validation
+            if (isValid && rule.pattern && value && !rule.pattern.test(value)) {
+                isValid = false;
+                errorMessage = rule.message || 'Invalid format';
+            }
+            
+            // Length validation
+            if (isValid && rule.minLength && value && value.length < rule.minLength) {
+                isValid = false;
+                errorMessage = `Minimum length is ${rule.minLength} characters`;
+            }
+            
+            if (isValid && rule.maxLength && value && value.length > rule.maxLength) {
+                isValid = false;
+                errorMessage = `Maximum length is ${rule.maxLength} characters`;
+            }
+            
+            // Numeric validation
+            if (isValid && rule.min !== undefined && value && parseFloat(value) < rule.min) {
+                isValid = false;
+                errorMessage = `Minimum value is ${rule.min}`;
+            }
+            
+            if (isValid && rule.max !== undefined && value && parseFloat(value) > rule.max) {
+                isValid = false;
+                errorMessage = `Maximum value is ${rule.max}`;
+            }
+            
+            // Date validation
+            if (isValid && fieldName === 'issueDate' && value) {
+                const selectedDate = new Date(value);
+                const now = new Date();
+                const oneMinuteAgo = new Date(now.getTime() - 60000); // 1 minute ago
+                
+                if (selectedDate < oneMinuteAgo) {
+                    isValid = false;
+                    errorMessage = 'Issue date cannot be in the past. Please select today or a future date.';
+                }
+            }
+            
+            // Stock availability validation for issue parts
+            if (isValid && fieldName === 'issueQuantity' && field.closest('#issuePartsForm')) {
+                const itemSelect = document.getElementById('itemSelect');
+                const selectedItemId = itemSelect.value;
+                const selectedQuantity = parseInt(value);
+                
+                if (selectedItemId && selectedQuantity) {
+                    // Check if we have stock data available
+                    const itemOptions = Array.from(itemSelect.options);
+                    const selectedOption = itemOptions.find(option => option.value === selectedItemId);
+                    if (selectedOption) {
+                        const stockText = selectedOption.textContent;
+                        const stockMatch = stockText.match(/Stock: (\d+)/);
+                        if (stockMatch) {
+                            const availableStock = parseInt(stockMatch[1]);
+                            if (selectedQuantity > availableStock) {
+                                isValid = false;
+                                errorMessage = `Only ${availableStock} items available in stock`;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Cross-field validation for issue parts
+            if (isValid && fieldName === 'itemId' && field.closest('#issuePartsForm')) {
+                const quantityField = document.getElementById('issueQuantity');
+                if (quantityField && quantityField.value) {
+                    // Re-validate quantity when item changes
+                    validateField(quantityField, rules);
+                }
+            }
+            
+            // Update field appearance
+            updateFieldValidation(field, isValid, errorMessage);
+            return isValid;
+        }
+        
+        function updateFieldValidation(field, isValid, errorMessage) {
+            const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+            
+            if (isValid) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+                if (feedbackElement) {
+                    feedbackElement.textContent = '';
+                    feedbackElement.style.display = 'none';
+                }
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+                if (feedbackElement) {
+                    feedbackElement.textContent = errorMessage;
+                    feedbackElement.style.display = 'block';
+                }
+            }
+        }
+        
+        function validateForm(form) {
+            const fields = form.querySelectorAll('input, select, textarea');
+            let isFormValid = true;
+            const invalidFields = [];
+            
+            fields.forEach(field => {
+                if (field.name && validationRules[field.name]) {
+                    const fieldValid = validateField(field, validationRules);
+                    if (!fieldValid) {
+                        isFormValid = false;
+                        invalidFields.push(field);
+                    }
+                }
+            });
+            
+            // Show validation summary if form is invalid
+            if (!isFormValid) {
+                showValidationSummary(form, invalidFields);
+            } else {
+                hideValidationSummary(form);
+            }
+            
+            return isFormValid;
+        }
+        
+        function showValidationSummary(form, invalidFields) {
+            let summary = form.querySelector('.validation-summary');
+            if (!summary) {
+                summary = document.createElement('div');
+                summary.className = 'validation-summary';
+                form.insertBefore(summary, form.firstChild);
+            }
+            
+            const errorCount = invalidFields.length;
+            summary.innerHTML = `
+                <strong><i class="fas fa-exclamation-triangle"></i> Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before submitting:</strong>
+                <ul class="mb-0 mt-2">
+                    ${invalidFields.map(field => `<li>${getFieldLabel(field)}: ${getFieldError(field)}</li>`).join('')}
+                </ul>
+            `;
+            summary.classList.add('show');
+        }
+        
+        function hideValidationSummary(form) {
+            const summary = form.querySelector('.validation-summary');
+            if (summary) {
+                summary.classList.remove('show');
+            }
+        }
+        
+        function getFieldLabel(field) {
+            const label = field.closest('.mb-3').querySelector('label');
+            return label ? label.textContent.replace('*', '').trim() : field.name;
+        }
+        
+        function getFieldError(field) {
+            const feedback = field.parentNode.querySelector('.invalid-feedback');
+            return feedback ? feedback.textContent : 'Invalid value';
+        }
+        
+        function setupRealTimeValidation(form) {
+            const fields = form.querySelectorAll('input, select, textarea');
+            
+            fields.forEach(field => {
+                if (field.name && validationRules[field.name]) {
+                    // Real-time validation on input
+                    field.addEventListener('input', function() {
+                        validateField(this, validationRules);
+                    });
+                    
+                    // Validation on blur
+                    field.addEventListener('blur', function() {
+                        validateField(this, validationRules);
+                    });
+                    
+                    // Validation on change (for selects)
+                    field.addEventListener('change', function() {
+                        validateField(this, validationRules);
+                    });
+                }
+            });
+        }
+        
+        function clearFormValidation(form) {
+            const fields = form.querySelectorAll('input, select, textarea');
+            fields.forEach(field => {
+                field.classList.remove('is-valid', 'is-invalid');
+                const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+                if (feedbackElement) {
+                    feedbackElement.textContent = '';
+                    feedbackElement.style.display = 'none';
+                }
+            });
+        }
+
+        function addStock(itemId) {
+            console.log('addStock called with itemId:', itemId);
+            document.getElementById('addStockForm').action = '/staff/inventory/add-stock/' + itemId;
+            new bootstrap.Modal(document.getElementById('addStockModal')).show();
+        }
+
+
+        function showDeleteModal(itemId, itemName) {
+            console.log('showDeleteModal called with:', {itemId, itemName});
+            document.getElementById('itemNameToDelete').textContent = itemName;
+            // Store the item ID for deletion
+            window.currentDeleteItemId = itemId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function confirmDelete() {
+            const itemId = window.currentDeleteItemId;
+            if (!itemId) {
+                console.error('No item ID found for deletion');
+                return;
+            }
+
+            console.log('Deleting inventory item with ID:', itemId);
+            
+            fetch(`/staff/inventory/delete/${itemId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('Delete response status:', response.status);
+                if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error(`Delete failed with status: ${response.status}`);
+                }
+            })
+            .then(message => {
+                console.log('Delete success:', message);
+                alert('Inventory item deleted successfully!');
+                // Close the modal
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                // Reload the page to refresh the inventory list
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error deleting inventory item:', error);
+                alert('Error deleting inventory item: ' + error.message);
+            });
+        }
+
+        // Quick action functions
+        function showAllItems(event) {
+            // Remove active class from all action cards
+            document.querySelectorAll('.action-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            // Add active class to clicked card
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            // Show all items section
+            document.getElementById('allItemsSection').style.display = 'block';
+            document.getElementById('lowStockSection').style.display = 'none';
+            document.getElementById('transactionsSection').style.display = 'none';
+            document.getElementById('issuePartsSection').style.display = 'none';
+        }
+
+        function showLowStock(event) {
+            // Remove active class from all action cards
+            document.querySelectorAll('.action-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            // Add active class to clicked card
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            // Show low stock section
+            document.getElementById('allItemsSection').style.display = 'none';
+            document.getElementById('lowStockSection').style.display = 'block';
+            document.getElementById('transactionsSection').style.display = 'none';
+            document.getElementById('issuePartsSection').style.display = 'none';
+        }
+
+        function showTransactions(event) {
+            // Remove active class from all action cards
+            document.querySelectorAll('.action-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            // Add active class to clicked card
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            // Show transactions section
+            document.getElementById('allItemsSection').style.display = 'none';
+            document.getElementById('lowStockSection').style.display = 'none';
+            document.getElementById('transactionsSection').style.display = 'block';
+            document.getElementById('issuePartsSection').style.display = 'none';
+        }
+
+        function showIssueParts(event) {
+            // Remove active class from all action cards
+            document.querySelectorAll('.action-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            // Add active class to clicked card
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            // Show issue parts section
+            document.getElementById('allItemsSection').style.display = 'none';
+            document.getElementById('lowStockSection').style.display = 'none';
+            document.getElementById('transactionsSection').style.display = 'none';
+            document.getElementById('issuePartsSection').style.display = 'block';
+            
+            // Set current date and time
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            const issueDateField = document.getElementById('issueDate');
+            if (issueDateField) {
+                issueDateField.value = localDateTime;
+            }
+        }
+
+        function clearIssueForm() {
+            document.getElementById('issuePartsForm').reset();
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('issueDate').value = localDateTime;
+        }
+
+        // Client-side filtering functions
+        function filterItems() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            const rows = document.querySelectorAll('.inventory-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                // Search filter
+                if (searchTerm) {
+                    const itemName = row.getAttribute('data-item-name').toLowerCase();
+                    if (!itemName.includes(searchTerm)) {
+                        showRow = false;
+                    }
+                }
+                
+                // Category filter
+                if (showRow && categoryFilter) {
+                    const category = row.getAttribute('data-category');
+                    if (category !== categoryFilter) {
+                        showRow = false;
+                    }
+                }
+                
+                // Status filter
+                if (showRow && statusFilter) {
+                    const quantity = parseInt(row.getAttribute('data-quantity'));
+                    const reorderLevel = parseInt(row.getAttribute('data-reorder-level'));
+                    
+                    switch (statusFilter) {
+                        case 'in-stock':
+                            if (quantity <= reorderLevel) {
+                                showRow = false;
+                            }
+                            break;
+                        case 'low-stock':
+                            if (quantity === 0 || quantity > reorderLevel) {
+                                showRow = false;
+                            }
+                            break;
+                        case 'out-of-stock':
+                            if (quantity > 0) {
+                                showRow = false;
+                            }
+                            break;
+                    }
+                }
+                
+                if (showRow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update filter info
+            updateFilterInfo(visibleCount, rows.length);
+        }
+        
+        function updateFilterInfo(visibleCount, totalCount) {
+            const filterInfo = document.getElementById('filterInfo');
+            const filterText = document.getElementById('filterText');
+            
+            if (visibleCount < totalCount) {
+                filterText.textContent = `Showing ${visibleCount} of ${totalCount} items`;
+                filterInfo.style.display = 'flex';
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        }
+        
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            filterItems();
+        }
+        
+        function filterLowStockItems() {
+            const statusFilter = document.getElementById('lowStockFilter').value;
+            const rows = document.querySelectorAll('.low-stock-row');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                if (statusFilter) {
+                    const quantity = parseInt(row.getAttribute('data-quantity'));
+                    const reorderLevel = parseInt(row.getAttribute('data-reorder-level'));
+                    
+                    switch (statusFilter) {
+                        case 'low':
+                            if (quantity === 0 || quantity > reorderLevel) {
+                                showRow = false;
+                            }
+                            break;
+                        case 'out':
+                            if (quantity > 0) {
+                                showRow = false;
+                            }
+                            break;
+                        case 'critical':
+                            if (quantity > 5) {
+                                showRow = false;
+                            }
+                            break;
+                    }
+                }
+                
+                if (showRow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function clearLowStockFilters() {
+            document.getElementById('lowStockFilter').value = '';
+            const rows = document.querySelectorAll('.low-stock-row');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
+        }
+
+        // Auto-submit functions for server-side filtering (kept for compatibility)
+        let searchTimeout;
+        let transactionSearchTimeout;
+
+        function autoSubmitSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                document.getElementById('searchForm').submit();
+            }, 500); // 500ms delay to avoid too many requests
+        }
+
+        function autoSubmitCategory() {
+            document.getElementById('categoryForm').submit();
+        }
+
+        function autoSubmitTransactionSearch() {
+            clearTimeout(transactionSearchTimeout);
+            transactionSearchTimeout = setTimeout(function() {
+                document.getElementById('transactionSearchForm').submit();
+            }, 500); // 500ms delay to avoid too many requests
+        }
+
+        function autoSubmitTransactionType() {
+            document.getElementById('transactionTypeForm').submit();
+        }
+
+        function autoSubmitStockStatus() {
+            document.getElementById('stockStatusForm').submit();
+        }
+
+        // Form validation functions
+        function setupFieldValidation(form) {
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    validateField(this);
+                });
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        validateField(this);
+                    }
+                });
+            });
+        }
+
+        function validateField(field) {
+            const isValid = field.checkValidity();
+            if (isValid) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            } else {
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+            }
+            return isValid;
+        }
+
+        function clearFormValidation(form) {
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.classList.remove('is-valid', 'is-invalid');
+            });
+        }
+
+        function validateForm(form) {
+            const inputs = form.querySelectorAll('input, select, textarea');
+            let isFormValid = true;
+            
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isFormValid = false;
+                }
+            });
+            
+            return isFormValid;
+        }
+
+        // Initialize all forms to have no validation state
+        function initializeForms() {
+            const forms = document.querySelectorAll('form[novalidate]');
+            forms.forEach(form => {
+                clearFormValidation(form);
+            });
+        }
+
+        // Add form submission handlers
+        function setupFormHandlers() {
+            // Add item form submission
+            const addItemForm = document.querySelector('form[action="/staff/inventory/save"]');
+            if (addItemForm) {
+                addItemForm.addEventListener('submit', function(e) {
+                    if (!validateForm(this)) {
+                        e.preventDefault();
+                        // Focus on first invalid field
+                        const firstInvalid = this.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.focus();
+                        }
+                        return false;
+                    }
+                });
+            }
+
+            // Edit item form submission
+            const editItemForm = document.querySelector('form[action="/staff/inventory/update"]');
+            if (editItemForm) {
+                editItemForm.addEventListener('submit', function(e) {
+                    if (!validateForm(this)) {
+                        e.preventDefault();
+                        // Focus on first invalid field
+                        const firstInvalid = this.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.focus();
+                        }
+                        return false;
+                    }
+                });
+            }
+
+            // Issue parts form submission
+            const issuePartsForm = document.getElementById('issuePartsForm');
+            if (issuePartsForm) {
+                issuePartsForm.addEventListener('submit', function(e) {
+                    if (!validateForm(this)) {
+                        e.preventDefault();
+                        // Focus on first invalid field
+                        const firstInvalid = this.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.focus();
+                        }
+                        return false;
+                    }
+                });
+            }
+
+            // Add stock form submission
+            const addStockForm = document.getElementById('addStockForm');
+            if (addStockForm) {
+                addStockForm.addEventListener('submit', function(e) {
+                    if (!validateForm(this)) {
+                        e.preventDefault();
+                        const firstInvalid = this.querySelector('.is-invalid');
+                        if (firstInvalid) {
+                            firstInvalid.focus();
+                        }
+                        return false;
+                    }
+                });
+            }
+
+        }
+
+        // Handle edit item modal
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all forms to have no validation state
+            initializeForms();
+            
+            // Setup real-time validation for all forms
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                setupRealTimeValidation(form);
+            });
+
+            // Setup form submission handlers with validation
+            setupFormHandlers();
+
+            // Set minimum date for datetime-local inputs to prevent past dates
+            const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            dateInputs.forEach(input => {
+                input.setAttribute('min', minDateTime);
+            });
+
+            // Add click event listeners to all action buttons for debugging
+            const actionButtons = document.querySelectorAll('.btn-action');
+            actionButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    console.log('Button clicked:', this.className, this.onclick);
+                    // Don't prevent default, let the onclick handler work
+                });
+            });
+
+
+            // Clear validation when modals are opened
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('show.bs.modal', function() {
+                    const form = this.querySelector('form');
+                    if (form) {
+                        clearFormValidation(form);
+                        // Re-setup validation for the form
+                        setupRealTimeValidation(form);
+                        
+                        // Re-set minimum date for any datetime inputs in the modal
+                        const modalDateInputs = form.querySelectorAll('input[type="datetime-local"]');
+                        modalDateInputs.forEach(input => {
+                            input.setAttribute('min', minDateTime);
+                        });
+                    }
+                });
+            });
+
+            const editItemModal = document.getElementById('editItemModal');
+            if (editItemModal) {
+                editItemModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const itemId = button.getAttribute('data-item-id');
+                    const itemName = button.getAttribute('data-item-name');
+                    const category = button.getAttribute('data-category');
+                    const quantity = button.getAttribute('data-quantity');
+                    const reorderLevel = button.getAttribute('data-reorder-level');
+                    const unitPrice = button.getAttribute('data-unit-price');
+                    
+                    // Populate the form fields
+                    document.getElementById('editItemId').value = itemId;
+                    document.getElementById('editItemName').value = itemName;
+                    document.getElementById('editCategory').value = category;
+                    document.getElementById('editQuantity').value = quantity;
+                    document.getElementById('editReorderLevel').value = reorderLevel;
+                    document.getElementById('editUnitPrice').value = unitPrice;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

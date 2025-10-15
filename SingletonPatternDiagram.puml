@@ -1,0 +1,169 @@
+@startuml Singleton Pattern Diagram - Vehicle Service System
+
+!theme plain
+skinparam backgroundColor #F8F9FA
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #2C3E50
+skinparam arrowColor #2C3E50
+skinparam noteBackgroundColor #E8F4FD
+skinparam noteBorderColor #3498DB
+
+title Singleton Design Pattern Implementation
+subtitle Vehicle Service System
+
+package "Custom Singleton Implementation" {
+    class SingletonManager {
+        - static volatile SingletonManager instance
+        - ConcurrentHashMap<String, Object> singletonInstances
+        - AtomicInteger instanceCount
+        - Logger logger
+        --
+        - SingletonManager()
+        + getInstance() : SingletonManager
+        + registerSingleton(key, instance) : T
+        + getSingleton(key, clazz) : T
+        + hasSingleton(key) : boolean
+        + verifySingletonBehavior() : boolean
+        + logSingletonStatus() : void
+    }
+    
+    note right of SingletonManager
+        **Thread-Safe Lazy Singleton**
+        - Double-checked locking
+        - Volatile keyword for memory visibility
+        - Private constructor prevents external instantiation
+        - Registry system for managing other singletons
+    end note
+}
+
+package "Spring Framework Singletons" {
+    class BookingService {
+        + getAllBookings() : List<Booking>
+        + saveBooking(booking) : Booking
+        + updateBooking(booking) : Booking
+        + deleteBooking(id) : void
+    }
+    
+    class UserService {
+        + getAllUsers() : List<User>
+        + saveUser(user) : User
+        + getUserById(id) : Optional<User>
+        + deleteUser(id) : void
+    }
+    
+    class InventoryService {
+        + getAllItems() : List<InventoryItem>
+        + saveItem(item) : InventoryItem
+        + updateItem(item) : InventoryItem
+        + deleteItem(id) : void
+    }
+    
+    class FeedbackService {
+        + getAllFeedback() : List<Feedback>
+        + saveFeedback(feedback) : Feedback
+        + updateFeedback(feedback) : Feedback
+        + deleteFeedback(id) : void
+    }
+    
+    class AssignmentService {
+        + getTechnicianAssignments() : List<TechnicianAssignment>
+        + assignTechnician(assignment) : TechnicianAssignment
+        + updateAssignment(assignment) : TechnicianAssignment
+    }
+    
+    class SingletonVerificationService {
+        + verifyAllSingletons() : void
+        + verifyBean(beanName) : Map<String, Object>
+        + isBeanSingleton(beanName) : boolean
+    }
+}
+
+package "Controllers (Spring Singletons)" {
+    class AdminController
+    class AuthController
+    class BookingController
+    class CustomerController
+    class FeedbackController
+    class InventoryController
+    class ManagerController
+    class StaffController
+}
+
+package "Repositories (Spring Singletons)" {
+    class UserRepository
+    class BookingRepository
+    class InventoryItemRepository
+    class TechnicianRepository
+    class FeedbackRepository
+    class RoleRepository
+}
+
+' Relationships
+SingletonManager --> SingletonVerificationService : manages
+SingletonVerificationService --> BookingService : verifies
+SingletonVerificationService --> UserService : verifies
+SingletonVerificationService --> InventoryService : verifies
+SingletonVerificationService --> FeedbackService : verifies
+SingletonVerificationService --> AssignmentService : verifies
+
+BookingService --> BookingRepository : uses
+UserService --> UserRepository : uses
+InventoryService --> InventoryItemRepository : uses
+FeedbackService --> FeedbackRepository : uses
+
+AdminController --> BookingService : uses
+AuthController --> UserService : uses
+BookingController --> BookingService : uses
+CustomerController --> BookingService : uses
+FeedbackController --> FeedbackService : uses
+InventoryController --> InventoryService : uses
+ManagerController --> FeedbackService : uses
+StaffController --> AssignmentService : uses
+
+' Singleton Pattern Characteristics
+note top of SingletonManager
+    **Singleton Pattern Characteristics:**
+    1. **Single Instance**: Only one instance exists
+    2. **Global Access**: Accessible globally via getInstance()
+    3. **Lazy Initialization**: Created only when needed
+    4. **Thread Safety**: Double-checked locking
+    5. **Private Constructor**: Prevents external instantiation
+end note
+
+note bottom of BookingService
+    **Spring Singleton Features:**
+    - @Service annotation
+    - @Scope("singleton")
+    - Automatic dependency injection
+    - Thread-safe by Spring container
+    - Lifecycle managed by IoC container
+end note
+
+' Thread Safety Implementation
+note right of SingletonManager
+    **Thread Safety Implementation:**
+    ```java
+    public static SingletonManager getInstance() {
+        if (instance == null) {                    // First check
+            synchronized (SingletonManager.class) {
+                if (instance == null) {            // Second check
+                    instance = new SingletonManager();
+                }
+            }
+        }
+        return instance;
+    }
+    ```
+end note
+
+' Verification Process
+note left of SingletonVerificationService
+    **Singleton Verification Process:**
+    1. Get bean instance twice from Spring context
+    2. Compare instances using == operator
+    3. Verify both references point to same object
+    4. Log verification results
+    5. Track singleton behavior
+end note
+
+@enduml

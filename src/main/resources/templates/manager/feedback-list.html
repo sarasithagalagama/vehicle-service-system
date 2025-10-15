@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">All Customer Feedback</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="/manager/dashboard" class="sidebar-brand">
+                <i class="fas fa-car"></i>
+                Vehicle Service
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a class="nav-link" href="/manager/dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link active" href="/manager/feedbacks">
+                    <i class="fas fa-comments"></i>
+                    Feedback
+                </a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">Customer Feedback Management</h1>
+                        <p class="page-subtitle">View and manage all customer feedback</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="stat-number" id="totalFeedbacks">-</div>
+                    <div class="stat-label">Total Feedback</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-number" id="averageRating">-</div>
+                    <div class="stat-label">Average Rating</div>
+                </div>
+            </div>
+
+            <!-- Feedback List -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            All Customer Feedback
+                        </h5>
+                        <div class="search-box">
+                            <div class="input-group">
+                                <input type="text" id="feedbackSearch" placeholder="Search feedback..." class="form-control">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Messages -->
+                    <div th:if="${message}" class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <span th:text="${message}"></span>
+                    </div>
+                    <div th:if="${error}" class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span th:text="${error}"></span>
+                    </div>
+
+                    <!-- Feedback Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Booking</th>
+                                    <th>Rating</th>
+                                    <th>Comment</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${feedbacks == null or #lists.isEmpty(feedbacks)}">
+                                    <td colspan="5" class="text-center">
+                                        <div class="empty-state">
+                                            <i class="fas fa-comments"></i>
+                                            <h3>No feedback available</h3>
+                                            <p>No customer feedback has been submitted yet.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:each="feedback : ${feedbacks}" class="feedback-row">
+                                    <td class="py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3 d-flex align-items-center justify-content-center feedback-avatar">
+                                                <i class="fas fa-user text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold mb-1" th:text="${feedback.user.firstName + ' ' + feedback.user.lastName}">Customer Name</div>
+                                                <small class="text-muted" th:text="${feedback.user.email}">customer@email.com</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div>
+                                            <div class="fw-semibold mb-1" th:text="${feedback.booking.bookingNumber}">BK001</div>
+                                            <small class="text-muted" th:text="${feedback.booking.serviceType}">Service Type</small>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="stars me-2" th:data-rating="${feedback.rating}">
+                                                <span th:each="i : ${#numbers.sequence(1, 5)}" 
+                                                      th:text="${i <= feedback.rating ? '★' : '☆'}" 
+                                                      th:class="${i <= feedback.rating ? 'text-warning' : 'text-muted'}"
+                                                      class="star-rating-small"></span>
+                                            </div>
+                                            <span class="fw-semibold" th:text="${feedback.rating} + '★'">5★</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="text-truncate feedback-comment" th:title="${feedback.comment}">
+                                            <span th:text="${#strings.abbreviate(feedback.comment, 50)}">Comment preview...</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div>
+                                            <div class="fw-semibold mb-1" th:text="${#temporals.format(feedback.createdAt, 'MMM dd, yyyy')}">Jan 15, 2024</div>
+                                            <small class="text-muted" th:text="${#temporals.format(feedback.createdAt, 'h:mm a')}">2:30 PM</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Load feedback statistics on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/manager/feedback-stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalFeedbacks').textContent = data.totalFeedbacks || 0;
+                    document.getElementById('averageRating').textContent = data.averageRating ? data.averageRating.toFixed(1) + '★' : '0★';
+                })
+                .catch(error => {
+                    console.error('Error fetching feedback stats:', error);
+                });
+        });
+
+        // Search functionality
+        document.getElementById('feedbackSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('.feedback-row');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
