@@ -187,9 +187,7 @@ public class Booking {
         updatePaymentStatus();
     }
 
-    /**
-     * Update payment status based on paid amount and total price
-     */
+    /// Update payment status based on paid amount and total price
     private void updatePaymentStatus() {
         if (this.totalPrice == null || this.paidAmount == null) {
             return;

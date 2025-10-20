@@ -101,9 +101,7 @@ public class FeedbackService {
         return feedbackRepository.existsByBookingId(bookingId);
     }
 
-    /**
-     * Find inactive feedback for a booking (for potential reactivation)
-     */
+    /// Find inactive feedback for a booking (for potential reactivation)
     public Optional<Feedback> findInactiveFeedbackByBookingId(Long bookingId) {
         return feedbackRepository.findAllIncludingInactive().stream()
                 .filter(f -> f.getBooking().getId().equals(bookingId) && !f.getIsActive())

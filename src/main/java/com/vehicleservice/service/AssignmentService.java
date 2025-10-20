@@ -30,9 +30,7 @@ public class AssignmentService {
 
     // ==================== TECHNICIAN MANAGEMENT ====================
 
-    /**
-     * Create a new technician with user account
-     */
+    /// Create a new technician with user account
     public Technician createTechnician(User user, String employeeId, String specialization,
             Integer maxDailyWorkload, BigDecimal hourlyRate, Integer experienceYears) {
         Technician technician = new Technician();
@@ -48,37 +46,27 @@ public class AssignmentService {
         return technicianRepository.save(technician);
     }
 
-    /**
-     * Get all active technicians
-     */
+    /// Get all active technicians
     public List<Technician> getAllActiveTechnicians() {
         return technicianRepository.findByIsActiveTrue();
     }
 
-    /**
-     * Get the maximum employee ID for generating next ID
-     */
+    /// Get the maximum employee ID for generating next ID
     public String getMaxEmployeeId() {
         return technicianRepository.findMaxEmployeeId();
     }
 
-    /**
-     * Get technician by ID
-     */
+    /// Get technician by ID
     public Optional<Technician> getTechnicianById(Long id) {
         return technicianRepository.findById(id);
     }
 
-    /**
-     * Get technician by user ID
-     */
+    /// Get technician by user ID
     public Optional<Technician> getTechnicianByUserId(Long userId) {
         return technicianRepository.findByUser_Id(userId);
     }
 
-    /**
-     * Update technician details
-     */
+    /// Update technician details
     public Technician updateTechnician(Long technicianId, String specialization,
             Integer maxDailyWorkload, BigDecimal hourlyRate, Integer experienceYears) {
         Optional<Technician> technicianOpt = technicianRepository.findById(technicianId);
@@ -94,9 +82,7 @@ public class AssignmentService {
         return null;
     }
 
-    /**
-     * Delete technician (soft delete)
-     */
+    /// Delete technician (soft delete)
     public boolean deleteTechnician(Long id) {
         Optional<Technician> technicianOpt = technicianRepository.findById(id);
         if (technicianOpt.isPresent()) {
@@ -111,9 +97,7 @@ public class AssignmentService {
 
     // ==================== ASSIGNMENT MANAGEMENT ====================
 
-    /**
-     * Assign technician to booking
-     */
+    /// Assign technician to booking
     public TechnicianAssignment assignTechnicianToBooking(Long bookingId, Long technicianId,
             User assignedBy, String notes) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
@@ -148,9 +132,7 @@ public class AssignmentService {
         throw new RuntimeException("Booking or technician not found");
     }
 
-    /**
-     * Assign technician to booking with specific assignment date
-     */
+    /// Assign technician to booking with specific assignment date
     public TechnicianAssignment assignTechnicianToBooking(Long bookingId, Long technicianId,
             User assignedBy, String notes, LocalDateTime assignmentDate) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
@@ -185,37 +167,27 @@ public class AssignmentService {
         throw new RuntimeException("Booking or technician not found");
     }
 
-    /**
-     * Get all assignments
-     */
+    /// Get all assignments
     public List<TechnicianAssignment> getAllAssignments() {
         return assignmentRepository.findAll();
     }
 
-    /**
-     * Get assignments by technician
-     */
+    /// Get assignments by technician
     public List<TechnicianAssignment> getAssignmentsByTechnician(Long technicianId) {
         return assignmentRepository.findByTechnician_Id(technicianId);
     }
 
-    /**
-     * Get assignments by booking
-     */
+    /// Get assignments by booking
     public List<TechnicianAssignment> getAssignmentsByBooking(Long bookingId) {
         return assignmentRepository.findByBooking_Id(bookingId);
     }
 
-    /**
-     * Get assignment by ID
-     */
+    /// Get assignment by ID
     public Optional<TechnicianAssignment> getAssignmentById(Long id) {
         return assignmentRepository.findById(id);
     }
 
-    /**
-     * Update assignment status
-     */
+    /// Update assignment status
     public TechnicianAssignment updateAssignmentStatus(Long assignmentId,
             TechnicianAssignment.AssignmentStatus status) {
         Optional<TechnicianAssignment> assignmentOpt = assignmentRepository.findById(assignmentId);
@@ -228,17 +200,13 @@ public class AssignmentService {
         throw new RuntimeException("Assignment not found");
     }
 
-    /**
-     * Update assignment
-     */
+    /// Update assignment
     public TechnicianAssignment updateAssignment(TechnicianAssignment assignment) {
         assignment.setUpdatedAt(LocalDateTime.now());
         return assignmentRepository.save(assignment);
     }
 
-    /**
-     * Complete assignment and update workload
-     */
+    /// Complete assignment and update workload
     public TechnicianAssignment completeAssignment(Long assignmentId) {
         Optional<TechnicianAssignment> assignmentOpt = assignmentRepository.findById(assignmentId);
         if (assignmentOpt.isPresent()) {
@@ -257,9 +225,7 @@ public class AssignmentService {
         throw new RuntimeException("Assignment not found");
     }
 
-    /**
-     * Remove assignment
-     */
+    /// Remove assignment
     public boolean removeAssignment(Long assignmentId) {
         Optional<TechnicianAssignment> assignmentOpt = assignmentRepository.findById(assignmentId);
         if (assignmentOpt.isPresent()) {
@@ -277,9 +243,7 @@ public class AssignmentService {
         return false;
     }
 
-    /**
-     * Delete assignments by booking
-     */
+    /// Delete assignments by booking
     public void deleteAssignmentsByBooking(Long bookingId) {
         List<TechnicianAssignment> assignments = assignmentRepository.findByBooking_Id(bookingId);
         for (TechnicianAssignment assignment : assignments) {
@@ -294,9 +258,7 @@ public class AssignmentService {
 
     // ==================== UNIFIED MANAGEMENT ====================
 
-    /**
-     * Get technician with their assignments
-     */
+    /// Get technician with their assignments
     public TechnicianWithAssignments getTechnicianWithAssignments(Long technicianId) {
         Optional<Technician> technicianOpt = technicianRepository.findById(technicianId);
         if (technicianOpt.isPresent()) {
@@ -307,9 +269,7 @@ public class AssignmentService {
         return null;
     }
 
-    /**
-     * Get all technicians with their assignments
-     */
+    /// Get all technicians with their assignments
     public List<TechnicianWithAssignments> getAllTechniciansWithAssignments() {
         List<Technician> technicians = technicianRepository.findByIsActiveTrue();
         return technicians.stream()
@@ -321,9 +281,7 @@ public class AssignmentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get workload statistics for technician
-     */
+    /// Get workload statistics for technician
     public TechnicianWorkloadStats getTechnicianWorkloadStats(Long technicianId) {
         Optional<Technician> technicianOpt = technicianRepository.findById(technicianId);
         if (technicianOpt.isPresent()) {
@@ -352,9 +310,7 @@ public class AssignmentService {
         return null;
     }
 
-    /**
-     * Cleanup orphaned assignments
-     */
+    /// Cleanup orphaned assignments
     public int cleanupOrphanedAssignments() {
         List<TechnicianAssignment> allAssignments = assignmentRepository.findAll();
         int cleanedCount = 0;
@@ -374,9 +330,7 @@ public class AssignmentService {
 
     // ==================== INNER CLASSES ====================
 
-    /**
-     * DTO for technician with assignments
-     */
+    /// DTO for technician with assignments
     public static class TechnicianWithAssignments {
         private Technician technician;
         private List<TechnicianAssignment> assignments;
@@ -404,9 +358,7 @@ public class AssignmentService {
         }
     }
 
-    /**
-     * DTO for technician workload statistics
-     */
+    /// DTO for technician workload statistics
     public static class TechnicianWorkloadStats {
         private Technician technician;
         private long assignedCount;

@@ -30,9 +30,8 @@ public class InventoryController {
 
     // =================== DASHBOARD ENDPOINTS ===================
 
-    /**
-     * Inventory Manager dashboard
-     */
+    // Inventory Manager dashboard
+
     @GetMapping("/staff/inventory-manager/dashboard")
     public String inventoryManagerDashboard(Authentication authentication, Model model) {
         try {
@@ -59,9 +58,8 @@ public class InventoryController {
         }
     }
 
-    /**
-     * Load inventory manager-specific data
-     */
+    // Load inventory manager-specific data
+
     private void loadInventoryManagerData(Model model) {
         try {
             // Get inventory items

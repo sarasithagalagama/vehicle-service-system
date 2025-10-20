@@ -12,10 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Authentication Controller
- * Handles user login, registration, and role-based redirection
- */
+/// Authentication Controller
+/// Handles user login, registration, and role-based redirection
 @Controller
 @org.springframework.context.annotation.Scope("singleton")
 public class AuthController {
@@ -23,14 +21,11 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
-    /**
-     * Display login page
-     * 
-     * @param error  Error parameter from failed login attempt
-     * @param logout Logout parameter from successful logout
-     * @param model  Model to add attributes
-     * @return Login page template
-     */
+    /// Display login page
+    /// @param error  Error parameter from failed login attempt
+    /// @param logout Logout parameter from successful logout
+    /// @param model  Model to add attributes
+    /// @return Login page template
     @GetMapping("/login")
     public String login(@RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "logout", required = false) String logout,
@@ -44,25 +39,21 @@ public class AuthController {
         return "auth/login";
     }
 
-    /**
-     * Display registration page
-     * 
-     * @param model Model to add attributes
-     * @return Registration page template
-     */
+    /// Display registration page
+    ///
+    /// @param model Model to add attributes
+    /// @return Registration page template
     @GetMapping("/register")
     public String register(Model model) {
         model.addAttribute("user", new User());
         return "auth/register";
     }
 
-    /**
-     * Process user registration
-     * 
-     * @param user               User object from form
-     * @param redirectAttributes Flash attributes for redirect
-     * @return Redirect to login page on success, registration page on error
-     */
+    /// Process user registration
+    ///
+    /// @param user               User object from form
+    /// @param redirectAttributes Flash attributes for redirect
+    /// @return Redirect to login page on success, registration page on error
     @PostMapping("/register")
     public String registerUser(User user, RedirectAttributes redirectAttributes) {
         try {
@@ -109,12 +100,10 @@ public class AuthController {
         }
     }
 
-    /**
-     * Validate registration input
-     * 
-     * @param user User object to validate
-     * @return Validation error message or null if valid
-     */
+    /// Validate registration input
+    ///
+    /// @param user User object to validate
+    /// @return Validation error message or null if valid
     private String validateRegistrationInput(User user) {
         // Validate first name
         if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
@@ -166,13 +155,11 @@ public class AuthController {
         return null; // All validations passed
     }
 
-    /**
-     * Home page - show landing page for unauthenticated users, redirect
-     * authenticated users to dashboard
-     * 
-     * @param authentication Current user authentication
-     * @return Home page template or redirect to appropriate dashboard
-     */
+    /// Home page - show landing page for unauthenticated users, redirect
+    /// authenticated users to dashboard
+    ///
+    /// @param authentication Current user authentication
+    /// @return Home page template or redirect to appropriate dashboard
     @GetMapping("/")
     public String home(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
@@ -204,11 +191,8 @@ public class AuthController {
         return "index";
     }
 
-    /**
-     * Public home page
-     * 
-     * @return Home page template
-     */
+    /// Public home page
+    /// @return Home page template
     @GetMapping("/home")
     public String homePage() {
         return "index";

@@ -17,9 +17,7 @@ public class StaffController {
     @Autowired
     private UserService userService;
 
-    /**
-     * Staff dashboard main endpoint - routes to appropriate dashboard based on role
-     */
+    /// Staff dashboard main endpoint - routes to appropriate dashboard based on role
     @GetMapping("/staff/dashboard")
     public String staffDashboardDirect(Authentication authentication, Model model,
             @RequestParam(defaultValue = "0") int page,

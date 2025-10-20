@@ -604,11 +604,8 @@ public class ManagerController {
     }
 
     // ==================== UNIFIED TECHNICIAN-ASSIGNMENT MANAGEMENT
-    // ====================
 
-    /**
-     * Get all technicians with their assignments
-     */
+    /// Get all technicians with their assignments
     @GetMapping("/manager/technicians-with-assignments")
     @ResponseBody
     public ResponseEntity<List<AssignmentService.TechnicianWithAssignments>> getAllTechniciansWithAssignments(
@@ -622,9 +619,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Get technician with assignments by ID
-     */
+    /// Get technician with assignments by ID
     @GetMapping("/manager/technicians/{id}/with-assignments")
     @ResponseBody
     public ResponseEntity<AssignmentService.TechnicianWithAssignments> getTechnicianWithAssignments(
@@ -642,9 +637,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Get technician workload statistics
-     */
+    /// Get technician workload statistics
     @GetMapping("/manager/technicians/{id}/workload-stats")
     @ResponseBody
     public ResponseEntity<AssignmentService.TechnicianWorkloadStats> getTechnicianWorkloadStats(@PathVariable Long id,
@@ -661,9 +654,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Update technician details
-     */
+    // Update technician details
     @PostMapping("/manager/technicians/{id}/update-details")
     @ResponseBody
     public ResponseEntity<String> updateTechnicianDetails(@PathVariable Long id,
@@ -686,9 +677,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Complete assignment
-     */
+    // Complete assignment
     @PostMapping("/manager/assignments/{id}/complete")
     @ResponseBody
     public ResponseEntity<String> completeAssignment(@PathVariable Long id, Authentication authentication) {
@@ -700,9 +689,8 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Remove assignment
-     */
+    // Remove assignment
+
     @DeleteMapping("/manager/assignments/{id}")
     @ResponseBody
     public ResponseEntity<String> removeAssignment(@PathVariable Long id, Authentication authentication) {
@@ -718,9 +706,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Update technician - Frontend compatible endpoint
-     */
+    /// Update technician - Frontend compatible endpoint
     @PostMapping("/manager/technicians/{id}/update")
     @ResponseBody
     public ResponseEntity<String> updateTechnician(@PathVariable Long id,
@@ -745,9 +731,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Update assignment status
-     */
+    /// Update assignment status
     @PostMapping("/manager/assignments/{id}/update-status")
     @ResponseBody
     public ResponseEntity<String> updateAssignmentStatus(@PathVariable Long id,
@@ -776,9 +760,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * View all feedbacks - Manager only
-     */
+    /// View all feedbacks - Manager only
     @GetMapping("/manager/feedbacks")
     public String viewAllFeedbacks(Authentication authentication, Model model) {
         try {
@@ -809,9 +791,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * View specific feedback details - Manager only
-     */
+    /// View specific feedback details - Manager only
     @GetMapping("/manager/feedbacks/{id}")
     public String viewFeedbackDetails(@PathVariable Long id, Authentication authentication, Model model) {
         try {
@@ -846,9 +826,7 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Delete feedback - Manager only
-     */
+    /// Delete feedback - Manager only
     @PostMapping("/manager/feedbacks/{id}/delete")
     public String deleteFeedback(@PathVariable Long id, Authentication authentication,
             org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
@@ -880,9 +858,8 @@ public class ManagerController {
         }
     }
 
-    /**
-     * Get feedback statistics for manager dashboard
-     */
+    // Get feedback statistics for manager dashboard
+
     @GetMapping("/manager/feedback-stats")
     @ResponseBody
     public ResponseEntity<?> getFeedbackStats(Authentication authentication) {

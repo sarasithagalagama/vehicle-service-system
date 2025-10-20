@@ -158,17 +158,12 @@ public class BookingService {
     // Maximum bookings per slot
     private static final int MAX_BOOKINGS_PER_SLOT = 2;
 
-    /**
-     * Get available time slots for a given date
-     */
+    /// Get available time slots for a given date
     public List<TimeSlot> getAvailableSlots(LocalDate date) {
         return getAvailableSlots(date, null);
     }
 
-    /**
-     * Get available time slots for a given date and service type using Strategy
-     * pattern
-     */
+    /// Get available time slots for a given date and service type using Strategy pattern
     public List<TimeSlot> getAvailableSlots(LocalDate date, String serviceType) {
         List<TimeSlot> availableSlots = new ArrayList<>();
 
@@ -196,9 +191,7 @@ public class BookingService {
         return availableSlots;
     }
 
-    /**
-     * Check if a specific time slot is available
-     */
+    /// Check if a specific time slot is available
     public boolean isSlotAvailable(LocalDate date, LocalTime time) {
         List<Booking> existingBookings = bookingRepository.findByBookingDate(date);
         TimeSlot requestedSlot = new TimeSlot(date, time, time.plusMinutes(60)); // 60 minutes default slot duration
@@ -207,9 +200,7 @@ public class BookingService {
         return bookingCount < MAX_BOOKINGS_PER_SLOT;
     }
 
-    /**
-     * Get available slots for the next 7 days
-     */
+    /// Get available slots for the next 7 days
     public List<DateSlots> getAvailableSlotsForWeek(LocalDate startDate) {
         List<DateSlots> weekSlots = new ArrayList<>();
 
@@ -222,9 +213,7 @@ public class BookingService {
         return weekSlots;
     }
 
-    /**
-     * Get real-time available slots (always fresh data)
-     */
+    /// Get real-time available slots (always fresh data)
     public List<TimeSlot> getRealTimeAvailableSlots(LocalDate date, String serviceType) {
         // Force fresh data by getting current bookings
         List<Booking> currentBookings = bookingRepository.findByBookingDate(date);
@@ -258,9 +247,7 @@ public class BookingService {
         return availableSlots;
     }
 
-    /**
-     * Clear slot availability cache (placeholder for future caching implementation)
-     */
+    /// Clear slot availability cache (placeholder for future caching implementation)
     private void clearSlotAvailabilityCache() {
         // For now, this is a placeholder
         // In the future, if we implement caching, we would clear the cache here
@@ -268,39 +255,29 @@ public class BookingService {
         System.out.println("Slot availability cache cleared - next request will use fresh data");
     }
 
-    /**
-     * Force refresh slot availability (public method for external calls)
-     */
+    /// Force refresh slot availability (public method for external calls)
     public void forceRefreshSlotAvailability() {
         clearSlotAvailabilityCache();
         System.out.println("Slot availability force refreshed");
     }
 
-    /**
-     * Get fixed price for a service type using Strategy pattern
-     */
+    /// Get fixed price for a service type using Strategy pattern
     public double getServicePrice(String serviceType) {
         BigDecimal basePrice = pricingStrategyManager.calculateBasePrice(serviceType);
         return basePrice.doubleValue();
     }
 
-    /**
-     * Get service price as BigDecimal using Strategy pattern
-     */
+    /// Get service price as BigDecimal using Strategy pattern
     public BigDecimal getServicePriceAsBigDecimal(String serviceType) {
         return pricingStrategyManager.calculateBasePrice(serviceType);
     }
 
-    /**
-     * Get complete pricing information using Strategy pattern
-     */
+    /// Get complete pricing information using Strategy pattern
     public PricingStrategyManager.PricingResult getCompletePricing(String serviceType) {
         return pricingStrategyManager.calculateCompletePricing(serviceType);
     }
 
-    /**
-     * Calculate total cost including additional charges using Strategy pattern
-     */
+    /// Calculate total cost including additional charges using Strategy pattern
     public double calculateTotalCost(String serviceType, double additionalCharges) {
         BigDecimal basePrice = pricingStrategyManager.calculateBasePrice(serviceType);
         BigDecimal additionalChargesBD = BigDecimal.valueOf(additionalCharges);
@@ -308,61 +285,45 @@ public class BookingService {
         return totalPrice.doubleValue();
     }
 
-    /**
-     * Calculate total cost as BigDecimal using Strategy pattern
-     */
+    /// Calculate total cost as BigDecimal using Strategy pattern
     public BigDecimal calculateTotalCostAsBigDecimal(String serviceType, BigDecimal additionalCharges) {
         BigDecimal basePrice = pricingStrategyManager.calculateBasePrice(serviceType);
         return pricingStrategyManager.calculateTotalPrice(serviceType, basePrice, additionalCharges);
     }
 
-    /**
-     * Calculate remaining amount to pay
-     */
+    /// Calculate remaining amount to pay
     public double calculateRemainingAmount(double totalCost, double paidAmount) {
         return Math.max(0, totalCost - paidAmount);
     }
 
-    /**
-     * Process payment for a booking using Strategy pattern
-     */
+    /// Process payment for a booking using Strategy pattern
     public PaymentProcessingStrategy.PaymentResult processPayment(
             Booking booking, BigDecimal amount, String paymentMethod) {
         return paymentProcessingStrategyManager.processPayment(booking, amount, paymentMethod);
     }
 
-    /**
-     * Calculate processing fees for a payment using Strategy pattern
-     */
+    /// Calculate processing fees for a payment using Strategy pattern
     public BigDecimal calculateProcessingFees(BigDecimal amount, String paymentMethod) {
         return paymentProcessingStrategyManager.calculateProcessingFees(amount, paymentMethod);
     }
 
-    /**
-     * Validate payment before processing using Strategy pattern
-     */
+    /// Validate payment before processing using Strategy pattern
     public PaymentProcessingStrategy.PaymentValidationResult validatePayment(
             Booking booking, BigDecimal amount, String paymentMethod) {
         return paymentProcessingStrategyManager.validatePayment(booking, amount, paymentMethod);
     }
 
-    /**
-     * Get supported payment methods
-     */
+    /// Get supported payment methods
     public List<String> getSupportedPaymentMethods() {
         return paymentProcessingStrategyManager.getSupportedPaymentMethods();
     }
 
-    /**
-     * Calculate service pricing using pricing strategies
-     */
+    /// Calculate service pricing using pricing strategies
     public PricingStrategyManager.PricingResult calculateServicePricing(String serviceType) {
         return pricingStrategyManager.calculateCompletePricing(serviceType);
     }
 
-    /**
-     * Update payment information for a booking
-     */
+    /// Update payment information for a booking
     @Transactional
     public Booking updatePayment(Long bookingId, double paidAmount) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
@@ -378,9 +339,7 @@ public class BookingService {
         return null;
     }
 
-    /**
-     * Update payment status based on paid amount and total price
-     */
+    /// Update payment status based on paid amount and total price
     private void updatePaymentStatus(Booking booking) {
         double totalPrice = booking.getTotalPrice().doubleValue();
         double paidAmount = booking.getPaidAmount().doubleValue();
@@ -401,9 +360,7 @@ public class BookingService {
         }
     }
 
-    /**
-     * Process refund for a cancelled booking
-     */
+    /// Process refund for a cancelled booking
     @Transactional
     public Booking processRefund(Long bookingId) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
@@ -424,9 +381,7 @@ public class BookingService {
         return null;
     }
 
-    /**
-     * Cancel booking and process refund if needed
-     */
+    /// Cancel booking and process refund if needed
     @Transactional
     public Booking cancelBooking(Long bookingId, boolean processRefund) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
@@ -445,9 +400,7 @@ public class BookingService {
         return null;
     }
 
-    /**
-     * Count bookings in a specific time slot
-     */
+    /// Count bookings in a specific time slot
     private int countBookingsInSlot(List<Booking> bookings, TimeSlot slot) {
         int count = 0;
         for (Booking booking : bookings) {
@@ -464,9 +417,7 @@ public class BookingService {
         return count;
     }
 
-    /**
-     * Check if a booking time overlaps with a slot
-     */
+    /// Check if a booking time overlaps with a slot
     private boolean isTimeOverlapping(Booking booking, TimeSlot slot) {
         if (booking.getBookingDate() == null) {
             return false;
@@ -481,9 +432,7 @@ public class BookingService {
                 bookingTime.isBefore(slot.getEndTime());
     }
 
-    /**
-     * TimeSlot inner class
-     */
+    /// TimeSlot inner class
     public static class TimeSlot {
         private LocalDate date;
         private LocalTime startTime;
@@ -546,9 +495,7 @@ public class BookingService {
         }
     }
 
-    /**
-     * DateSlots inner class
-     */
+    /// DateSlots inner class
     public static class DateSlots {
         private LocalDate date;
         private List<TimeSlot> slots;

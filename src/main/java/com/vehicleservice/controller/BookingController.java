@@ -625,9 +625,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Get service pricing information
-     */
+    /// Get service pricing information
     @GetMapping("/staff/service-pricing")
     @ResponseBody
     public ResponseEntity<?> getServicePricing(@RequestParam String serviceType) {
@@ -642,9 +640,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Calculate processing fees for staff
-     */
+    /// Calculate processing fees for staff
     @PostMapping("/staff/payment/calculate-fees")
     @ResponseBody
     public ResponseEntity<?> calculateStaffProcessingFees(@RequestParam BigDecimal amount,
@@ -663,9 +659,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Calculate complete service pricing for staff using pricing strategies
-     */
+    /// Calculate complete service pricing for staff using pricing strategies
     @PostMapping("/staff/pricing/calculate")
     @ResponseBody
     public ResponseEntity<?> calculateStaffServicePricing(@RequestParam String serviceType) {
@@ -689,9 +683,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Calculate total cost for a booking
-     */
+    /// Calculate total cost for a booking
     @PostMapping("/staff/calculate-cost")
     @ResponseBody
     public ResponseEntity<?> calculateTotalCost(@RequestParam String serviceType,
@@ -710,9 +702,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Process refund for a booking
-     */
+    /// Process refund for a booking
     @PostMapping("/staff/bookings/{id}/refund")
     @ResponseBody
     public ResponseEntity<?> processRefund(@PathVariable Long id) {
@@ -737,9 +727,7 @@ public class BookingController {
         }
     }
 
-    /**
-     * Cancel booking with optional refund
-     */
+    /// Cancel booking with optional refund
     @PostMapping("/staff/bookings/{id}/cancel")
     @ResponseBody
     public ResponseEntity<?> cancelBooking(@PathVariable Long id,

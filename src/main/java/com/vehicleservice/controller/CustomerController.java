@@ -43,9 +43,7 @@ public class CustomerController {
     @Autowired
     private FeedbackService feedbackService;
 
-    /**
-     * Customer Dashboard - All-in-one interface
-     */
+    /// Customer Dashboard - All-in-one interface
     @GetMapping("/dashboard")
     public String customerDashboard(Authentication authentication, Model model) {
         try {
@@ -110,9 +108,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Process booking form submission
-     */
+    /// Process booking form submission
     @PostMapping("/bookings/save")
     public String saveBooking(@RequestParam Map<String, String> allParams,
             Authentication authentication,
@@ -226,9 +222,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Update booking
-     */
+    /// Update booking
     @PostMapping("/bookings/update")
     public String updateBooking(@ModelAttribute Booking booking,
             Authentication authentication,
@@ -265,9 +259,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Get available slots for booking form
-     */
+    /// Get available slots for booking form
     @GetMapping("/slots/available")
     @ResponseBody
     public ResponseEntity<?> getAvailableSlots(@RequestParam String date,
@@ -282,9 +274,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Get service pricing
-     */
+    /// Get service pricing
     @GetMapping("/service-pricing")
     @ResponseBody
     public ResponseEntity<?> getServicePricing(@RequestParam String serviceType) {
@@ -299,9 +289,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * View booking details
-     */
+    /// View booking details
     @GetMapping("/bookings/{id}")
     @ResponseBody
     public ResponseEntity<?> viewBooking(@PathVariable Long id, Authentication authentication) {
@@ -331,9 +319,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Update booking
-     */
+    /// Update booking
     @PostMapping("/bookings/{id}/update")
     public String updateBooking(@PathVariable Long id,
             @ModelAttribute Booking booking,
@@ -395,9 +381,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Cancel/Delete booking
-     */
+    /// Cancel/Delete booking
     @PostMapping("/bookings/{id}/cancel")
     public String cancelBooking(@PathVariable Long id,
             Authentication authentication,
@@ -442,9 +426,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Check slot availability
-     */
+    /// Check slot availability
     @GetMapping("/slots/check")
     @ResponseBody
     public ResponseEntity<?> checkSlotAvailability(@RequestParam String date, @RequestParam String time) {
@@ -458,9 +440,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Update customer profile
-     */
+    /// Update customer profile
     @PostMapping("/profile/update")
     public String updateProfile(@ModelAttribute User user, Authentication authentication,
             RedirectAttributes redirectAttributes) {
@@ -508,9 +488,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Change customer password
-     */
+    /// Change customer password
     @PostMapping("/profile/change-password")
     public String changePassword(@RequestParam String currentPassword,
             @RequestParam String newPassword,
@@ -583,9 +561,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Validate user profile data
-     */
+    /// Validate user profile data
     private String validateUserProfile(User user) {
         // Validate first name
         if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
@@ -670,9 +646,7 @@ public class CustomerController {
         return null; // No validation errors
     }
 
-    /**
-     * Show feedback form for a specific booking
-     */
+    /// Show feedback form for a specific booking
     @GetMapping("/bookings/{id}/feedback")
     public String showFeedbackForm(@PathVariable Long id, Authentication authentication, Model model) {
         try {
@@ -719,9 +693,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Submit feedback for a booking
-     */
+    /// Submit feedback for a booking
     @PostMapping("/bookings/{id}/feedback")
     public String submitFeedback(@PathVariable Long id,
             @RequestParam Integer rating,
@@ -787,9 +759,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Check if feedback exists for a booking
-     */
+    /// Check if feedback exists for a booking
     @GetMapping("/bookings/{id}/feedback/exists")
     @ResponseBody
     public ResponseEntity<?> checkFeedbackExists(@PathVariable Long id, Authentication authentication) {
@@ -820,9 +790,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * View all feedbacks by the current customer
-     */
+    /// View all feedbacks by the current customer
     @GetMapping("/feedbacks")
     public String viewMyFeedbacks(Authentication authentication, Model model) {
         try {
@@ -844,9 +812,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * View specific feedback details
-     */
+    /// View specific feedback details
     @GetMapping("/feedbacks/{id}")
     public String viewFeedback(@PathVariable Long id, Authentication authentication, Model model) {
         try {
@@ -878,9 +844,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Show edit feedback form
-     */
+    /// Show edit feedback form
     @GetMapping("/feedbacks/{id}/edit")
     public String editFeedbackForm(@PathVariable Long id, Authentication authentication, Model model) {
         try {
@@ -912,9 +876,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Update feedback
-     */
+    /// Update feedback
     @PostMapping("/feedbacks/{id}/edit")
     public String updateFeedback(@PathVariable Long id,
             @RequestParam Integer rating,
@@ -962,9 +924,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Show delete feedback confirmation
-     */
+    /// Show delete feedback confirmation
     @GetMapping("/feedbacks/{id}/delete")
     public String deleteFeedbackForm(@PathVariable Long id, Authentication authentication, Model model) {
         try {
@@ -996,9 +956,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Delete feedback
-     */
+    /// Delete feedback
     @PostMapping("/feedbacks/{id}/delete")
     public String deleteFeedback(@PathVariable Long id, Authentication authentication,
             RedirectAttributes redirectAttributes) {
@@ -1034,9 +992,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Get supported payment methods
-     */
+    /// Get supported payment methods
     @GetMapping("/payment-methods")
     @ResponseBody
     public ResponseEntity<?> getSupportedPaymentMethods() {
@@ -1049,9 +1005,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Calculate processing fees for a payment method
-     */
+    /// Calculate processing fees for a payment method
     @PostMapping("/payment/calculate-fees")
     @ResponseBody
     public ResponseEntity<?> calculateProcessingFees(@RequestParam BigDecimal amount,
@@ -1070,9 +1024,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Calculate service pricing using pricing strategies
-     */
+    /// Calculate service pricing using pricing strategies
     @PostMapping("/pricing/calculate")
     @ResponseBody
     public ResponseEntity<?> calculateServicePricing(@RequestParam String serviceType) {
@@ -1092,9 +1044,7 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Process payment for a booking
-     */
+    /// Process payment for a booking
     @PostMapping("/payment/process")
     @ResponseBody
     public ResponseEntity<?> processPayment(@RequestParam Long bookingId,
