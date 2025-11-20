@@ -9,6 +9,8 @@ A Spring Boot web application for managing a vehicle service centre. The app pro
 - Technician assignment and workload management (manager tools to assign and monitor technicians).
 - Demonstrations of design patterns used (Strategy, Singleton, Factory via Spring IoC).
 
+## Screenshots
+
 ## Key Info
 
 - Framework: Spring Boot (Java)
