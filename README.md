@@ -10,6 +10,10 @@ A Spring Boot web application for managing a vehicle service centre. The app pro
 - Demonstrations of design patterns used (Strategy, Singleton, Factory via Spring IoC).
 
 ## Screenshots
+<img width="1912" height="2804" alt="image" src="https://github.com/user-attachments/assets/05fce636-1bea-4023-94a9-5ea27139bc9f" />
+
+<img width="1912" height="1045" alt="image" src="https://github.com/user-attachments/assets/0d8e87f8-accb-4efd-9671-4bf85db43c5b" />
+
 
 ## Key Info
 
